@@ -5,6 +5,8 @@ override:
   experiment:
     name: partA_arch
     # NB: impostare optim.lr al miglior valore trovato in 00_baseline
+  optim:
+    lr: 5.0e-4
 sweep:
   model.d_model: [256, 384]
   model.num_layers: [4, 6]
