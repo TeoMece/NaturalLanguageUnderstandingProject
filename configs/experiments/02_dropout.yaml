@@ -1,0 +1,10 @@
+# Esperimento 2 - Aggiunta dei 4 punti di dropout sopra la migliore config.
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_dropout
+  model:
+    dropout:
+      enabled: true
+      p: 0.1
+    # NB: portare qui la migliore architettura/lr dei passi precedenti

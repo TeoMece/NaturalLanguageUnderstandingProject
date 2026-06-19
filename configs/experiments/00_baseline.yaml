@@ -1,0 +1,8 @@
+# Esperimento 0 - Baseline: ricerca del learning rate, resto fisso.
+# Lo sweep genera 3 run (una per valore di lr); scheduler warmup+cosine attivo.
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_baseline
+sweep:
+  optim.lr: [1.0e-3, 5.0e-4, 1.0e-4]

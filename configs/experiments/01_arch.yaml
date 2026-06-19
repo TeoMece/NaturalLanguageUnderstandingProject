@@ -1,0 +1,10 @@
+# Esperimento 1 - Tuning dell'architettura (una modifica alla volta).
+# Lo sweep esplora 2x2 = 4 combinazioni di d_model e num_layers.
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_arch
+    # NB: impostare optim.lr al miglior valore trovato in 00_baseline
+sweep:
+  model.d_model: [256, 384]
+  model.num_layers: [4, 6]

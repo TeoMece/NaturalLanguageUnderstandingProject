@@ -1,0 +1,7 @@
+torch
+transformers==4.38.0
+pyyaml
+matplotlib
+tqdm
+pytest
+tensorboard

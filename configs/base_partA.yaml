@@ -1,0 +1,34 @@
+# Configurazione di base per la Parte 1.A (GPT2 from scratch su Penn Treebank).
+# Gli esperimenti in configs/experiments/ ereditano da questo file con
+# `base: ../base_partA.yaml` e ne sovrascrivono solo i campi necessari.
+experiment:
+  name: partA          # nome usato per la cartella della run
+  seed: 42             # seed globale per la riproducibilita'
+  device: auto         # auto -> cuda | mps | cpu (risolto a runtime)
+  tensorboard: false   # logging live opzionale su TensorBoard
+data:
+  fraction: 1.0        # frazione di frasi di train usate (1.0 = tutte)
+  max_samples: null    # alternativa a fraction: numero assoluto di frasi
+  subset_seed: 42      # seed per il sottocampionamento riproducibile
+  batch_size: 32
+model:
+  pos_emb_size: 1024   # lunghezza massima di sequenza supportata dal modello
+  d_model: 256         # dimensione degli embedding / hidden state
+  n_heads: 4           # numero di teste di attention
+  num_layers: 4        # numero di blocchi transformer
+  ff_dim: 1024         # dimensione interna del feed-forward
+  weight_tying: false  # condivide i pesi token_embed <-> lm_head (miglioria 1.A)
+  dropout:
+    enabled: false     # abilita i 4 punti di dropout (miglioria 1.A)
+    p: 0.1             # probabilita' di dropout quando enabled = true
+optim:
+  lr: 1.0e-3           # learning rate (il valore piu' importante da tarare)
+  optimizer: adamw     # configurabile (adamw default; sgd supportato)
+  epochs: 30           # numero massimo di epoche (early stopping puo' fermare prima)
+  grad_clip: 1.0       # clipping della norma del gradiente
+  patience: 5          # epoche senza miglioramento di valid PPL prima dello stop
+  scheduler:
+    enabled: true      # nel baseline: warmup + cosine decay del learning rate
+    type: warmup_cosine
+    warmup_steps: 200  # step di salita lineare prima del cosine decay
+mode: dev              # dev -> valuta su valid | final -> full dataset + valuta su test

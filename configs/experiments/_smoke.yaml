@@ -1,0 +1,16 @@
+# Configurazione di smoke test: usa un sottoinsieme minimo del dataset (1%)
+# e un modello molto piccolo per verificare rapidamente che la pipeline
+# end-to-end funzioni senza errori (da 'python run.py run' a metrics.json).
+# Non pensata per ottenere buone metriche, solo per validare il codice.
+
+experiment: {name: smoke, seed: 1, device: cpu}
+
+data: {fraction: 0.01, batch_size: 4, subset_seed: 1}
+
+model: {pos_emb_size: 128, d_model: 32, n_heads: 2, num_layers: 1, ff_dim: 64,
+        weight_tying: false, dropout: {enabled: false, p: 0.1}}
+
+optim: {lr: 0.001, optimizer: adamw, epochs: 1, grad_clip: 1.0, patience: 2,
+        scheduler: {enabled: true, warmup_steps: 5}}
+
+mode: dev

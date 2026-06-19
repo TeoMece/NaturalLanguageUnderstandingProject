@@ -1,0 +1,10 @@
+# Esperimento 3 - Aggiunta del weight tying (sopra dropout + migliore config).
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_weighttying
+  model:
+    weight_tying: true
+    dropout:
+      enabled: true
+      p: 0.1
