@@ -1,5 +1,26 @@
 import textwrap
-from lm_pipeline.config import load_config, set_dotted, expand_sweep
+from lm_pipeline.config import load_config, set_dotted, expand_sweep, resolve_ff_dim
+
+
+def test_resolve_ff_dim_auto_uses_default_mult():
+    m = {"d_model": 384, "ff_dim": "auto"}
+    resolve_ff_dim(m)
+    assert m["ff_dim"] == 1536            # 4 * 384 (ff_mult di default)
+
+def test_resolve_ff_dim_none_is_derived():
+    m = {"d_model": 512}                  # ff_dim assente
+    resolve_ff_dim(m)
+    assert m["ff_dim"] == 2048            # 4 * 512
+
+def test_resolve_ff_dim_respects_custom_mult():
+    m = {"d_model": 256, "ff_dim": "auto", "ff_mult": 2}
+    resolve_ff_dim(m)
+    assert m["ff_dim"] == 512             # 2 * 256
+
+def test_resolve_ff_dim_explicit_int_wins():
+    m = {"d_model": 512, "ff_dim": 1024}
+    resolve_ff_dim(m)
+    assert m["ff_dim"] == 1024            # intero esplicito non viene toccato
 
 def test_set_dotted_creates_nested_value():
     d = {"optim": {"lr": 1e-3}}

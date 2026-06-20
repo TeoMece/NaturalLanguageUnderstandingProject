@@ -71,6 +71,30 @@ def set_dotted(d, dotted_key, value):
     cur[keys[-1]] = value
 
 
+def resolve_ff_dim(model_cfg):
+    """Risolve ``ff_dim`` derivandolo da ``d_model`` quando richiesto.
+
+    Regola di precedenza:
+    - se ``ff_dim`` e' ``"auto"`` (o ``None``/assente) -> ``ff_dim = ff_mult * d_model``,
+      con ``ff_mult`` opzionale (default 4, la convenzione transformer);
+    - se ``ff_dim`` e' gia' un intero esplicito -> lasciato invariato.
+
+    Va invocata sulla config CONCRETA (dopo l'espansione dello sweep), cosi'
+    ``d_model`` e' gia' il valore definitivo della run. Muta ``model_cfg`` in-place
+    (cosi' il valore risolto finisce anche nel ``metrics.json``) e lo ritorna.
+
+    Args:
+        model_cfg (dict): la sezione ``model`` della config.
+
+    Returns:
+        dict: lo stesso ``model_cfg``, con ``ff_dim`` risolto a intero.
+    """
+    if model_cfg.get("ff_dim") in (None, "auto"):
+        mult = model_cfg.get("ff_mult", 4)
+        model_cfg["ff_dim"] = int(mult * model_cfg.get("d_model", 256))
+    return model_cfg
+
+
 def load_config(path):
     """Carica una config YAML risolvendo ereditarieta' (``base``) e ``override``.
 

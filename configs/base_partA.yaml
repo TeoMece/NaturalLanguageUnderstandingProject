@@ -16,7 +16,8 @@ model:
   d_model: 256         # dimensione degli embedding / hidden state
   n_heads: 4           # numero di teste di attention
   num_layers: 4        # numero di blocchi transformer
-  ff_dim: 1024         # dimensione interna del feed-forward
+  ff_dim: auto         # 'auto' -> ff_mult * d_model (default 4x); o un intero esplicito
+  ff_mult: 4           # rapporto FFN usato quando ff_dim='auto' (con d_model=256 -> 1024)
   weight_tying: false  # condivide i pesi token_embed <-> lm_head (miglioria 1.A)
   dropout:
     enabled: false     # abilita i 4 punti di dropout (miglioria 1.A)

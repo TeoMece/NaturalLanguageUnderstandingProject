@@ -16,6 +16,7 @@ import time
 import torch
 import torch.nn as nn
 
+from . import config
 from . import data as data_mod
 from . import tracking
 from .model import GPT2, init_weights
@@ -119,7 +120,11 @@ def run_experiment(cfg, runs_root, dataset_dir, tokenizer=None):
     )
 
     # ---- Costruzione del modello ----
-    m = cfg.get("model", {})
+    m = cfg.setdefault("model", {})
+    # Risolve ff_dim='auto' (o assente) in ff_mult*d_model: il rapporto FFN resta
+    # costante al variare di d_model nello sweep. Muta cfg["model"], cosi' il valore
+    # risolto finisce anche in metrics.json. Va fatto dopo l'espansione dello sweep.
+    config.resolve_ff_dim(m)
     # Il dropout e' un sottodizionario {enabled: bool, p: float}
     dropout_cfg = m.get("dropout", {})
     # Se dropout non e' abilitato, forza p=0.0 (baseline puro, senza dropout)

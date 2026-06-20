@@ -1,0 +1,14 @@
+# Esperimento 1 - Tuning dell'architettura (una modifica alla volta).
+# Lo sweep esplora 3x3 = 9 combinazioni di d_model e num_layers.
+# Vincolo: d_model deve essere divisibile per n_heads (=4 nel base) -> 256/384/512 ok.
+# ff_dim e' 'auto' nel base (= 4 * d_model), quindi scala da solo con d_model:
+# 256->1024, 384->1536, 512->2048. Modelli proporzionati, confronto pulito.
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_arch
+  optim:
+    lr: 5.0e-4           # miglior lr trovato in 00_baseline
+sweep:
+  model.d_model: [256, 384, 512]
+  model.num_layers: [2, 4, 6]
