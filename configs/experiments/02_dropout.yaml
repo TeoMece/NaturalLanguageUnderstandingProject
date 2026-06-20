@@ -4,9 +4,11 @@ override:
   experiment:
     name: partA_dropout
   model:
-    d_model: 384         # dimensione degli embedding / hidden state
+    d_model: 512         # dimensione degli embedding / hidden state
     n_heads: 6           # numero di teste di attention
     dropout:
       enabled: true
       p: 0.1
+  optim:
+    lr: 5.0e-4 
     # NB: portare qui la migliore architettura/lr dei passi precedenti
