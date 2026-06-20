@@ -11,4 +11,7 @@ override:
       p: 0.1
   optim:
     lr: 5.0e-4 
+
     # NB: portare qui la migliore architettura/lr dei passi precedenti
+sweep:
+  model.dropout.p: [0.1, 0.2, 0.3, 0.4, 0.5]
