@@ -4,13 +4,12 @@ override:
   experiment:
     name: partA_dropout
   model:
-    d_model: 512         # dimensione degli embedding / hidden state
-    num_layers: 6        # numero di blocchi transformer
+    d_model: 384         # dimensione degli embedding / hidden state
+    num_layers: 2        # numero di blocchi transformer
     dropout:
       enabled: true
-      p: 0.1
   optim:
-    lr: 5.0e-4 
+    lr: 1.0e-3
 
     # NB: portare qui la migliore architettura/lr dei passi precedenti
 sweep:
