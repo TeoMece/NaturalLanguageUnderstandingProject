@@ -1,5 +1,5 @@
 import torch
-from lm_pipeline.model import GPT2
+from lm_pipeline.model import GPT2, init_weights
 
 def _tiny(**kw):
     base = dict(vocab_size=50, pos_emb_size=16, d_model=8, n_heads=2,
@@ -30,3 +30,27 @@ def test_dropout_enabled_changes_train_eval():
     model.eval()
     b = model(idx)
     assert not torch.allclose(a, b)         # dropout attivo solo in train
+
+def test_init_embeddings_use_normal_scale():
+    torch.manual_seed(0)
+    model = _tiny()
+    init_weights(model)
+    # gli Embedding NON devono restare alla scala N(0,1) di default...
+    assert model.token_embed.weight.std().item() < 0.1
+    # ...ne' essere clobberati all'uniforme ±0.01 dei Linear: scala ~0.02
+    assert model.token_embed.weight.abs().max().item() > 0.01
+
+def test_init_tied_head_keeps_embedding_scale():
+    torch.manual_seed(0)
+    model = _tiny(weight_tying=True)
+    init_weights(model)
+    assert model.lm_head.weight is model.token_embed.weight   # peso condiviso
+    # NON clobberato a uniform(±0.01): con normal(0.02) ci sono valori oltre 0.01
+    assert model.lm_head.weight.abs().max().item() > 0.01
+
+def test_init_untied_linear_uniform_bound():
+    torch.manual_seed(0)
+    model = _tiny(weight_tying=False)
+    init_weights(model)
+    # lm_head non-tied: init uniforme del lab -> |w| <= 0.01
+    assert model.lm_head.weight.abs().max().item() <= 0.01

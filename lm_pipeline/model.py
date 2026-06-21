@@ -314,14 +314,37 @@ class GPT2(nn.Module):
 
 
 def init_weights(mat):
-    """Inizializzazione uniforme dei Linear (come nel lab).
+    """Inizializza i pesi in modo coerente e compatibile col weight tying.
+
+    Due passate, nell'ordine:
+    1. ``nn.Embedding`` -> ``normal(0, 0.02)`` (scala sensata, stile GPT-2).
+       Senza questo, gli Embedding restavano all'init di default N(0,1).
+    2. ``nn.Linear``    -> ``uniform(-0.01, 0.01)`` (init del lab), MA i Linear
+       il cui peso e' condiviso con un Embedding (weight tying:
+       ``lm_head.weight is token_embed.weight``) vengono SALTATI per non
+       sovrascrivere l'init dell'embedding gia' applicato. Si imposta comunque
+       il bias, che nel tying NON e' condiviso.
+
+    Cosi' la matrice condivisa mantiene la scala dell'embedding sia con tying
+    attivo sia disattivo: l'unica differenza tra le due configurazioni resta il
+    tying stesso (confronto pulito), e non piu' la scala di inizializzazione.
 
     Parametri
     ----------
     mat : nn.Module  — modello o sottomodulo da inizializzare
     """
+    # Passata 1: Embedding. Registra gli id dei tensori per riconoscere i pesi
+    # condivisi (tying) nella passata successiva.
+    emb_weight_ids = set()
+    for m in mat.modules():
+        if isinstance(m, nn.Embedding):
+            nn.init.normal_(m.weight, mean=0.0, std=0.02)
+            emb_weight_ids.add(id(m.weight))
+
+    # Passata 2: Linear. Salta il peso se condiviso con un Embedding (tying).
     for m in mat.modules():
         if isinstance(m, nn.Linear):
-            nn.init.uniform_(m.weight, -0.01, 0.01)
+            if id(m.weight) not in emb_weight_ids:
+                nn.init.uniform_(m.weight, -0.01, 0.01)
             if m.bias is not None:
                 m.bias.data.fill_(0.01)

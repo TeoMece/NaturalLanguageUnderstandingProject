@@ -140,8 +140,10 @@ def run_experiment(cfg, runs_root, dataset_dir, tokenizer=None):
         dropout=dropout_p,
         weight_tying=m.get("weight_tying", False),# tying embedding/unembedding
     )
-    # Inizializza i pesi con la strategia definita in model.py (Glorot/zero bias)
-    model.apply(init_weights)
+    # Inizializza i pesi con la strategia definita in model.py. Una sola chiamata
+    # sull'intero modello (init_weights itera gia' i sottomoduli): necessario per
+    # l'init tying-aware, che deve vedere insieme Embedding e Linear condivisi.
+    init_weights(model)
 
     # ---- Training ----
     t0 = time.time()

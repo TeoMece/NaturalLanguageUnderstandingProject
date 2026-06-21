@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS
+.DS_Store
+
+# Memoria dell'agente (non fa parte del progetto)
+.claude/
+
+# Artefatti delle run: pesanti (checkpoint). I report restano versionati.
+runs/
+*.pt
+
+# Virtualenv locale
+.venv/
