@@ -1,0 +1,20 @@
+# Esperimento 6 - Big-arch + dropout sweep (branch Leva 1 / residual-init).
+# Ipotesi (per la scienza): il modello grande d512/l6 overfitta (valid 38.72 con
+# p=0.1). Aumentando il dropout se ne riduce la capacita' effettiva, quindi la
+# valid PPL dovrebbe SCENDERE verso ~34 (il livello del modello piccolo d384/l2)
+# SENZA batterlo -> conferma che il collo di bottiglia sono i dati, non la capacita'.
+# Tutto il resto = migliore config: weight tying, lr 1e-3, ff_dim auto.
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_bigarch_dropout
+  model:
+    weight_tying: true
+    d_model: 512
+    num_layers: 6
+    dropout:
+      enabled: true
+  optim:
+    lr: 1.0e-3
+sweep:
+  model.dropout.p: [0.1, 0.2, 0.3, 0.4, 0.5]
