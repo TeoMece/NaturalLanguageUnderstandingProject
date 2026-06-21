@@ -8,7 +8,7 @@ override:
   experiment:
     name: partA_arch
   optim:
-    lr: 5.0e-4           # miglior lr trovato in 00_baseline
+    lr: 1.0e-3           # miglior lr trovato in 00_baseline
 sweep:
   model.d_model: [256, 384, 512]
   model.num_layers: [2, 4, 6]
