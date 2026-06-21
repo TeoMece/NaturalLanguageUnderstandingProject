@@ -1,6 +1,7 @@
 | name | lr | valid PPL | test PPL | #params | s |
 |---|---|---|---|---|---|
 | partA_weighttying | 0.001 | 34.18 | - | 23291857 | 982.2 |
+| partA_noscheduler | 0.001 | 34.23 | - | 23291857 | 982.2 |
 | partA_dropout__p0.1 | 0.001 | 36.24 | - | 42590545 | 1010.4 |
 | partA_arch__d_model384__num_layers2 | 0.001 | 36.31 | - | 42590545 | 902.4 |
 | partA_arch__d_model384__num_layers4 | 0.001 | 36.85 | - | 46139473 | 987.6 |
