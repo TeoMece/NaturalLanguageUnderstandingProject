@@ -1,5 +1,14 @@
 | name | lr | valid PPL | test PPL | #params | s |
 |---|---|---|---|---|---|
+| partA_arch__d_model384__num_layers2 | 0.001 | 36.31 | - | 42590545 | 902.4 |
+| partA_arch__d_model384__num_layers4 | 0.001 | 36.85 | - | 46139473 | 987.6 |
+| partA_arch__d_model256__num_layers6 | 0.001 | 36.85 | - | 30783057 | 892.0 |
 | partA_baseline__lr0.001 | 0.001 | 36.91 | - | 29203537 | 846.1 |
+| partA_arch__d_model256__num_layers4 | 0.001 | 36.91 | - | 29203537 | 840.0 |
+| partA_arch__d_model256__num_layers2 | 0.001 | 37.00 | - | 27624017 | 790.5 |
 | partA_baseline__lr0.0005 | 0.0005 | 37.15 | - | 29203537 | 839.1 |
+| partA_arch__d_model384__num_layers6 | 0.001 | 37.29 | - | 49688401 | 1067.7 |
 | partA_baseline__lr0.0001 | 0.0001 | 37.49 | - | 29203537 | 1303.7 |
+| partA_arch__d_model512__num_layers2 | 0.001 | 37.96 | - | 58343505 | 1123.9 |
+| partA_arch__d_model512__num_layers4 | 0.001 | 39.78 | - | 64648273 | 1495.0 |
+| partA_arch__d_model512__num_layers6 | 0.001 | 40.97 | - | 70953041 | 2179.4 |
