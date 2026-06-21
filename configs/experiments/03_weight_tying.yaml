@@ -5,6 +5,10 @@ override:
     name: partA_weighttying
   model:
     weight_tying: true
+    d_model: 512         # dimensione degli embedding / hidden state
+    num_layers: 6        # numero di blocchi transformer
     dropout:
       enabled: true
       p: 0.1
+  optim:
+    lr: 5.0e-4 
