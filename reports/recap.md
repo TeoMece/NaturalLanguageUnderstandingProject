@@ -123,3 +123,47 @@ overfitting. The clean signal is validation PPL.
 4. **Heads-up:** `03_weight_tying.yaml` and `04_no_scheduler.yaml` still have
    **dropout enabled (p=0.1)**. Given Act 3, that base is sub-optimal — decide
    whether to disable dropout there for consistency before running them.
+
+---
+
+## ⚙️ Mid-season rewrite — two init bugs fixed
+
+> The numbers in Acts 1–3 above were produced with a flawed weight init and have
+> been (or are being) re-run. Two fixes landed:
+>
+> 1. **Embedding init.** `init_weights` ignored `nn.Embedding` (stayed at N(0,1)),
+>    and weight tying clobbered the shared matrix to the tiny Linear init →
+>    embeddings ~170× off between tied/untied. Now: embeddings `normal(0, 0.02)`,
+>    tying-aware. Pre-fix results archived in `reports_pre_fix/`.
+> 2. **Residual scaling — "Lever 1".** Residual-writing projections (`out_proj`,
+>    FFN 2nd Linear) now init to `normal(0, 0.02/√(2·num_layers))`, keeping the
+>    residual-stream variance constant with depth. Full explainer:
+>    `docs/leva1-init-residual-scaling.md`.
+>
+> **Post-(embedding-)fix best so far:** `d384/l2` + dropout p0.1 + weight tying,
+> lr 1e-3 → **valid PPL 34.18**. Notably, weight tying now *helps* (as expected
+> once the init was sane). Target of the project is PPL < 250 → already smashed;
+> the chase below is for sport.
+
+---
+
+## Act 4 — Lever 1 stress test: can depth finally win? 🏗️ *(results pending)*
+
+**Hypothesis.** With residual-scaled init, the biggest/deepest model should no
+longer underperform a shallow one. Config `05_bigarch.yaml`: the full best recipe
+(lr 1e-3, dropout p0.1, weight tying) on the **largest architecture** we have —
+`d_model=512`, `num_layers=6` (ff_dim 2048 auto). Residual std at init =
+`0.02/√12 ≈ 0.00577`.
+
+| metric | shallow best (`d384/l2`, post-emb-fix) | `d512/l6` + Lever 1 |
+|---|---|---|
+| valid PPL | 34.18 | **_TBD_** |
+| best epoch / epochs run | _TBD_ | **_TBD_** |
+| train_ppl @ best (gap) | _TBD_ | **_TBD_** |
+
+**What we're looking for:** valid PPL **below 34.18**, and a deep model that beats
+the shallow `d384/l2`. If depth now helps, Lever 1 did its job.
+
+**Result:** _to be filled after the run._
+
+➡️ **Carried forward:** _TBD (depends on the result above)._

@@ -7,6 +7,8 @@ dropout=0.0 e weight_tying=False si ottiene esattamente il baseline.
 Nota: questo modulo appartiene al livello *puro* della pipeline e NON importa
 nulla da config, experiment o tracking, per garantire massima riusabilita'.
 """
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -38,6 +40,8 @@ class MultiHeadAttention(nn.Module):
 
         # proiezione di output (concat delle teste -> d_model)
         self.out_proj = nn.Linear(d_model, d_model)
+        # Scrive nel residual stream: init scalata 1/sqrt(2*num_layers) (vedi init_weights).
+        self.out_proj._is_residual = True
 
         # Punto dropout 2: sui pesi di attention dopo softmax
         # Regolarizza il pattern di attention durante il training
@@ -131,6 +135,9 @@ class FeedForward(nn.Module):
             nn.Linear(hidden_dim, d_model),   # proiezione di ritorno
             nn.Dropout(dropout),              # Punto dropout 4: dopo l'ultimo linear
         )
+        # Il 2o Linear (indice 2) scrive nel residual stream: init scalata
+        # 1/sqrt(2*num_layers) (vedi init_weights).
+        self.net[2]._is_residual = True
 
     def forward(self, x):
         return self.net(x)
@@ -314,37 +321,59 @@ class GPT2(nn.Module):
 
 
 def init_weights(mat):
-    """Inizializza i pesi in modo coerente e compatibile col weight tying.
+    """Inizializza i pesi stile GPT-2, con residual scaling e tying-aware.
 
     Due passate, nell'ordine:
-    1. ``nn.Embedding`` -> ``normal(0, 0.02)`` (scala sensata, stile GPT-2).
-       Senza questo, gli Embedding restavano all'init di default N(0,1).
-    2. ``nn.Linear``    -> ``uniform(-0.01, 0.01)`` (init del lab), MA i Linear
-       il cui peso e' condiviso con un Embedding (weight tying:
-       ``lm_head.weight is token_embed.weight``) vengono SALTATI per non
-       sovrascrivere l'init dell'embedding gia' applicato. Si imposta comunque
-       il bias, che nel tying NON e' condiviso.
+    1. ``nn.Embedding`` -> ``normal(0, 0.02)``. Senza questo, gli Embedding
+       restavano all'init di default N(0,1).
+    2. ``nn.Linear``    -> ``normal(0, 0.02)``, con due eccezioni:
+       - proiezioni RESIDUALI (marcate ``_is_residual``: ``out_proj``
+         dell'attention e il 2o ``Linear`` della FFN) -> ``normal(0, 0.02/sqrt(N))``
+         con ``N = 2 * num_layers`` = numero di proiezioni residuali. E' il trucco
+         di GPT-2 (Leva 1): tiene la varianza del residual stream costante con la
+         profondita', cosi' i modelli profondi si allenano davvero.
+       - pesi condivisi con un Embedding (weight tying:
+         ``lm_head.weight is token_embed.weight``) -> SALTATI, per non
+         sovrascrivere l'init dell'embedding gia' applicato.
+       Il bias e' messo a 0 (standard GPT-2); nel tying NON e' condiviso.
 
     Cosi' la matrice condivisa mantiene la scala dell'embedding sia con tying
-    attivo sia disattivo: l'unica differenza tra le due configurazioni resta il
-    tying stesso (confronto pulito), e non piu' la scala di inizializzazione.
+    attivo sia disattivo (l'unica differenza resta il tying), e la profondita'
+    non gonfia piu' il residuo.
 
     Parametri
     ----------
     mat : nn.Module  — modello o sottomodulo da inizializzare
     """
-    # Passata 1: Embedding. Registra gli id dei tensori per riconoscere i pesi
-    # condivisi (tying) nella passata successiva.
+    # Passata 1: Embedding -> normal(0, 0.02). Registra gli id dei tensori per
+    # riconoscere i pesi condivisi (tying) nella passata successiva.
     emb_weight_ids = set()
     for m in mat.modules():
         if isinstance(m, nn.Embedding):
             nn.init.normal_(m.weight, mean=0.0, std=0.02)
             emb_weight_ids.add(id(m.weight))
 
-    # Passata 2: Linear. Salta il peso se condiviso con un Embedding (tying).
+    # Residual scaling (Leva 1, trucco GPT-2): le proiezioni che scrivono nel
+    # residual stream (marcate _is_residual: out_proj dell'attention e il 2o
+    # Linear della FFN) vanno inizializzate con std = 0.02 / sqrt(N_residual),
+    # dove N_residual = numero di tali proiezioni = 2 * num_layers. Cosi' la
+    # varianza del residuo resta costante con la profondita'. Contiamo le
+    # proiezioni invece di passare num_layers: e' equivalente e auto-consistente.
+    n_resid = sum(
+        1 for m in mat.modules()
+        if isinstance(m, nn.Linear) and getattr(m, "_is_residual", False)
+    )
+    residual_std = 0.02 / math.sqrt(n_resid) if n_resid > 0 else 0.02
+
+    # Passata 2: Linear -> normal(0, 0.02), tranne: i residuali (std ridotto) e i
+    # pesi condivisi con un Embedding (tying), che restano com'erano (gia' init).
     for m in mat.modules():
         if isinstance(m, nn.Linear):
-            if id(m.weight) not in emb_weight_ids:
-                nn.init.uniform_(m.weight, -0.01, 0.01)
+            if id(m.weight) in emb_weight_ids:
+                pass  # peso condiviso (tying): gia' inizializzato come Embedding
+            elif getattr(m, "_is_residual", False):
+                nn.init.normal_(m.weight, mean=0.0, std=residual_std)
+            else:
+                nn.init.normal_(m.weight, mean=0.0, std=0.02)
             if m.bias is not None:
-                m.bias.data.fill_(0.01)
+                m.bias.data.zero_()   # bias a 0 (standard GPT-2)

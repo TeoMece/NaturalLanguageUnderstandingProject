@@ -1,0 +1,18 @@
+# Esperimento 5 - Architettura piu' grande + init residual-scaled (Leva 1).
+# Tutti i migliori parametri trovati finora, ma con la MASSIMA architettura tra
+# quelle dello sweep (d_model=512, num_layers=6): test per vedere se, con il nuovo
+# init che scala la varianza del residuo con la profondita', il modello grande/
+# profondo ora migliora invece di peggiorare. Una sola run (niente sweep).
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_bigarch
+  model:
+    weight_tying: true   # miglioria confermata (esperimento 03)
+    d_model: 512         # massima larghezza dello sweep
+    num_layers: 6        # massima profondita' dello sweep
+    dropout:
+      enabled: true      # miglior dropout (esperimento 02)
+      p: 0.1
+  optim:
+    lr: 1.0e-3           # miglior lr (baseline post-fix)

@@ -48,9 +48,23 @@ def test_init_tied_head_keeps_embedding_scale():
     # NON clobberato a uniform(±0.01): con normal(0.02) ci sono valori oltre 0.01
     assert model.lm_head.weight.abs().max().item() > 0.01
 
-def test_init_untied_linear_uniform_bound():
+def test_init_untied_head_normal_scale():
     torch.manual_seed(0)
     model = _tiny(weight_tying=False)
     init_weights(model)
-    # lm_head non-tied: init uniforme del lab -> |w| <= 0.01
-    assert model.lm_head.weight.abs().max().item() <= 0.01
+    # lm_head non-tied e non-residuale: normal(0, 0.02) -> std ~0.02 (non piu' uniform 0.01)
+    assert 0.01 < model.lm_head.weight.std().item() < 0.05
+
+def test_init_residual_projections_scaled():
+    torch.manual_seed(0)
+    nl = 4
+    model = _tiny(num_layers=nl, d_model=64)      # piu' elementi -> std stabile
+    init_weights(model)
+    expected = 0.02 / (2 * nl) ** 0.5             # residual scaling 1/sqrt(2*num_layers)
+    out_proj = model.blocks[0].attn.out_proj      # proiezione residuale (attention)
+    ffn_proj = model.blocks[0].ff.net[2]          # proiezione residuale (FFN, 2o Linear)
+    w_q = model.blocks[0].attn.w_q                # NON residuale (riferimento)
+    # le residuali devono avere std ~ expected, e piu' piccolo della non-residuale
+    assert abs(out_proj.weight.std().item() - expected) < 0.003
+    assert abs(ffn_proj.weight.std().item() - expected) < 0.003
+    assert out_proj.weight.std().item() < w_q.weight.std().item()
