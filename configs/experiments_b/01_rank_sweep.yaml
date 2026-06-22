@@ -6,6 +6,6 @@ override:
   experiment:
     name: partB_rank
   optim:
-    lr: 1.0e-3        # <- sostituire col miglior lr trovato in 00_baseline
+    lr: 5.0e-4        # <- sostituire col miglior lr trovato in 00_baseline
 sweep:
   model.rank: [4, 8, 16]
