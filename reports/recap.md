@@ -24,19 +24,46 @@ Lesson logged in `memory/vm-gpu-setup.md` so we never re-fight this battle.
 
 ## ⚙️ The init fix that reshaped every result
 
-The first pass used a flawed weight init; once fixed, the conclusions changed
-(notably: weight tying went from useless to the biggest win). Two fixes landed:
+This is the most interesting part of 1.A: **we got these results by fixing the
+weight initialization** — and the fix didn't just shift numbers, it *reversed the
+conclusions*. The first campaign (archived in `reports_pre_fix/`) had a flawed init;
+once corrected, the architecture ranking flipped and weight tying went from
+catastrophic to the single biggest win.
 
-1. **Embedding init.** `init_weights` ignored `nn.Embedding` (it stayed at N(0,1)),
-   and weight tying clobbered the shared matrix down to the tiny Linear init →
-   embeddings were ~170× off between tied/untied. Now: embeddings `normal(0, 0.02)`,
-   tying-aware.
-2. **Residual scaling — "Lever 1".** Residual-writing projections (`out_proj`, FFN
-   2nd Linear) now init to `normal(0, 0.02/√(2·num_layers))`, keeping the
-   residual-stream variance constant with depth. Full explainer:
+### What was broken
+
+1. **Residual std divergence — "Lever 1".** In a pre-LN transformer each block does
+   `x = x + f(x)`, so the **variance of the residual stream grows additively with
+   the number of blocks**. Without scaling the residual-writing projections
+   (`out_proj`, FFN 2nd Linear) by `1/√(2·num_layers)`, deeper models started
+   training with an inflated, **depth-dependent activation scale** — the std
+   *diverged with depth*. So the architecture sweep wasn't measuring "depth"
+   cleanly: it was contaminated by an init artifact that got worse the deeper the
+   model. The fix: init those projections to `normal(0, 0.02/√(2·num_layers))`,
+   which holds the residual-stream std ~constant across depth. Full explainer:
    `docs/leva1-init-residual-scaling.md`.
+2. **Embedding init + tying.** `init_weights` ignored `nn.Embedding` (it stayed at
+   N(0,1)), and with weight tying the shared matrix got clobbered down to the tiny
+   Linear init — embeddings ended up **~170× off**. That's why tying was a disaster.
+   The fix: embeddings `normal(0, 0.02)`, tying-aware (don't overwrite the shared
+   matrix).
 
-Pre-fix numbers archived in `reports_pre_fix/`. Everything below is post-fix.
+### Old vs new — same configs, opposite verdicts
+
+| measurement | pre-fix (`reports_pre_fix/`) | post-fix (now) |
+|---|---|---|
+| `d384/l2`, no dropout | 40.43 (near worst) | **36.31** (best arch) |
+| `d512/l6`, no dropout | **36.97** (best arch) | 40.97 (near worst) |
+| architecture sweep says… | *bigger & deeper wins* | *moderate `d384/l2` wins* |
+| effect of weight tying | **catastrophic** (69.68 ≫ 36.97 untied) | **biggest win** (34.18 < 36.24 untied) |
+
+**Why they changed.** With the std diverging by depth, the big/deep models were
+running in a broken-init regime, so their apparent advantage was an **artifact, not
+a real benefit** — once the std was held constant across depth the spurious depth
+advantage vanished and the honest picture emerged (PTB is small → the moderate model
+generalizes best, depth doesn't help). And tying *requires* a sane embedding scale:
+with embeddings ~170× off it wrecked the model (69.68), but with the tying-aware init
+it became the best lever we have (34.18). Everything in the Acts below is post-fix.
 
 ---
 
