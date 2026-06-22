@@ -6,6 +6,10 @@
 > `mode: dev` (evaluate on validation), keeping the **test set sealed** until the
 > very end (`finalize`) to avoid data leakage.
 
+> **All numbers below are the post-fix results** (they match `reports/partA_summary.md`).
+> An early weight-init bug was found and fixed mid-project — see the box right
+> after Act 0; the pre-fix numbers are archived in `reports_pre_fix/`.
+
 ---
 
 ## Act 0 — Getting the machine to even run 🛠️
@@ -18,76 +22,135 @@ Lesson logged in `memory/vm-gpu-setup.md` so we never re-fight this battle.
 
 ---
 
-## Act 1 — Baseline: hunting the learning rate
+## ⚙️ The init fix that reshaped every result
 
-Fixed architecture (`d_model=256`, `num_layers=4`, scheduler warmup+cosine on),
-swept the learning rate.
+The first pass used a flawed weight init; once fixed, the conclusions changed
+(notably: weight tying went from useless to the biggest win). Two fixes landed:
 
-| lr | valid PPL |
-|------|-----------|
-| 1e-3 | 39.65 |
-| **5e-4** | **39.46** ← winner |
-| 1e-4 | 40.98 |
+1. **Embedding init.** `init_weights` ignored `nn.Embedding` (it stayed at N(0,1)),
+   and weight tying clobbered the shared matrix down to the tiny Linear init →
+   embeddings were ~170× off between tied/untied. Now: embeddings `normal(0, 0.02)`,
+   tying-aware.
+2. **Residual scaling — "Lever 1".** Residual-writing projections (`out_proj`, FFN
+   2nd Linear) now init to `normal(0, 0.02/√(2·num_layers))`, keeping the
+   residual-stream variance constant with depth. Full explainer:
+   `docs/leva1-init-residual-scaling.md`.
 
-**Discovery.** A gentle 5e-4 wins; too hot (1e-3) and too cold (1e-4) both lose.
-Nothing dramatic, but it gives us the anchor lr for everything downstream.
-
-➡️ **Carried forward: `lr = 5e-4`.**
+Pre-fix numbers archived in `reports_pre_fix/`. Everything below is post-fix.
 
 ---
 
-## Act 2 — Architecture: bigger *and* deeper
+## Act 1 — Baseline: hunting the learning rate
+
+Fixed architecture (`d_model=256`, `num_layers=4`, scheduler warmup+cosine on, no
+dropout, no tying), swept the learning rate.
+
+| lr | valid PPL |
+|------|-----------|
+| **1e-3** | **36.91** ← winner |
+| 5e-4 | 37.15 |
+| 1e-4 | 37.49 |
+
+**Discovery.** The hottest lr we tried (1e-3) wins outright, and PPL degrades
+smoothly as the lr drops — a from-scratch model needs a healthy step size to move
+in the epoch budget. This is the anchor lr for everything downstream.
+
+➡️ **Carried forward: `lr = 1e-3`.**
+
+---
+
+## Act 2 — Architecture: bigger is *not* better here
 
 Swept `d_model ∈ {256, 384, 512}` × `num_layers ∈ {2, 4, 6}` (9 runs), lr fixed.
 
 Along the way we built a small feature: **`ff_dim: auto`** (mirrors the existing
-`device: auto` idiom). The feed-forward width now scales as `4 × d_model`
-automatically, so every model keeps the canonical transformer proportions —
-otherwise a fixed `ff_dim` would have **confounded** the width comparison.
+`device: auto` idiom). The feed-forward width scales as `4 × d_model` automatically,
+so every model keeps canonical transformer proportions — otherwise a fixed `ff_dim`
+would have **confounded** the width comparison.
 
 | d_model \ layers | 2 | 4 | 6 |
 |---|---|---|---|
-| **256** | 42.26 | 39.46 | 38.39 |
-| **384** | 40.43 | 38.86 | 38.20 |
-| **512** | 39.90 | 38.02 | **36.97** |
+| **256** | 37.00 | 36.91 | 36.85 |
+| **384** | **36.31** | 36.85 | 37.29 |
+| **512** | 37.96 | 39.78 | 40.97 |
 
-**Discovery.** A clean monotone story: **wider helps, deeper helps**, and the two
-stack — the biggest/deepest model (`d512/l6`, valid **36.97**) wins.
-Nice sanity check: `d256/l4` here scores **39.46**, *identical* to the baseline's
-lr=5e-4 run — same config, same number → the pipeline is reproducible.
+**Discovery.** The sweet spot is a **moderate width, shallow depth** model:
+`d384/l2` wins at **36.31**. Crucially, **scaling up hurts**: the biggest/deepest
+`d512/l6` is among the *worst* (40.97). On a small corpus like PTB, with our epoch
+budget, the larger models don't pay off. Reproducibility check: `d256/l4` here
+scores **36.91**, identical to the baseline's lr=1e-3 run — same config, same
+number → the pipeline is reproducible.
 
-➡️ **Carried forward: `d_model = 512`, `num_layers = 6` (ff_dim = 2048).**
+➡️ **Carried forward: `d_model = 384`, `num_layers = 2` (ff_dim = 1536).**
 
 ---
 
-## Act 3 — Dropout: the regularizer that backfired 🎭
+## Act 3 — Dropout: a light touch helps
 
-Added the 4 dropout points on top of the best architecture and swept the rate.
+Added the 4 dropout points on top of the best architecture (`d384/l2`) and swept
+the rate.
 
 | dropout p | valid PPL |
 |---|---|
-| **none** | **36.97** ← still the best |
-| 0.1 | 37.27 |
-| 0.2 | 37.60 |
-| 0.3 | 39.06 |
-| 0.4 | 39.65 |
-| 0.5 | 41.52 |
+| none | 36.31 |
+| **0.1** | **36.24** ← best |
+| 0.2 | 36.85 |
+| 0.3 | 37.40 |
+| 0.4 | 39.40 |
+| 0.5 | 47.97 |
 
-**Discovery.** Dropout **monotonically hurts** — even the lightest touch (p=0.1)
-is worse than none, and it degrades smoothly up to p=0.5. The architecture search
-had already found a model that generalizes about as well as it can at this scale;
-adding regularization just removes capacity and injects noise.
-
-We checked the obvious escape hatch — *was early stopping cutting the dropout runs
-short?* No: higher-p runs actually trained **longer** (best epoch crept from 3 up
-to 14) and still ended **worse**. So more epochs wouldn't rescue it.
+**Discovery.** A gentle **p=0.1 helps** (36.24 vs 36.31 with none) — a small but
+real regularization gain at this scale. Beyond that it degrades monotonically, hard
+(p=0.5 → 47.97).
 
 ⚠️ **Methodological note.** The overfitting gap (`valid_ppl − train_ppl`) is only
 trustworthy for **no-dropout** runs: training loss is logged with dropout *active*
-(inflated), so the gap on dropout rows is an artifact, not a sign of less
-overfitting. The clean signal is validation PPL.
+(inflated), so the gap on dropout rows is an artifact. Use **`gap_report.py`** (see
+the reminder near the end) on the no-dropout runs to read overfitting honestly.
 
-➡️ **Carried forward: dropout OFF.**
+➡️ **Carried forward: dropout p=0.1.**
+
+---
+
+## Act 4 — Weight tying (the real win) + scheduler ablation
+
+On `d384/l2 + dropout p0.1`, added **weight tying** (share `token_embed ↔ lm_head`):
+
+| config | valid PPL |
+|---|---|
+| **+ weight tying** | **34.18** ← best overall |
+| same, scheduler OFF (ablation) | 34.23 |
+
+**Discovery.** Weight tying is the **biggest single jump** of the whole campaign
+(36.24 → **34.18**) — exactly what theory predicts, and exactly what the init fix
+unlocked (pre-fix, tying looked useless). The **scheduler ablation** shows
+warmup+cosine contributes only ~0.05 PPL here (34.23 vs 34.18): nice to have, not
+decisive. Keep it on (harmless).
+
+➡️ **Carried forward: weight tying ON, scheduler ON.**
+
+---
+
+## Act 5 — Lever 1 stress test: can depth finally win? (answered: no)
+
+**Hypothesis.** With residual-scaled init, the biggest/deepest model should stop
+underperforming. Config `05_bigarch.yaml`: full best recipe (tying, dropout p0.1,
+lr 1e-3) on `d512/l6`. And `06_bigarch_dropout.yaml` swept dropout on it.
+
+| config | valid PPL |
+|---|---|
+| `d512/l6` + tying + p0.1 (`bigarch`) | 38.72 |
+| `d512/l6` + tying, dropout p0.2 | 44.85 |
+| `d512/l6` + tying, dropout p0.3 | 45.92 |
+| `d512/l6` + tying, dropout p0.4 | 47.54 |
+
+**Verdict.** Even with Lever 1, the big/deep model (**38.72**) **loses** to the
+small `d384/l2` (**34.18**), and more dropout only makes it worse (it does *not*
+fall back toward 34). So depth is trainable now, but it doesn't help here: the
+bottleneck is **data** (PTB is small), not trainability. The shallow `d384/l2`
+stays king.
+
+➡️ **Carried forward: nothing new — `d384/l2 + p0.1 + tying` remains the best.**
 
 ---
 
@@ -95,13 +158,34 @@ overfitting. The clean signal is validation PPL.
 
 | field | value |
 |---|---|
-| d_model | 512 |
-| num_layers | 6 |
-| ff_dim | 2048 (auto, 4×) |
-| lr | 5e-4 |
+| d_model | 384 |
+| num_layers | 2 |
+| ff_dim | 1536 (auto, 4×) |
+| weight tying | ON |
+| dropout | p = 0.1 |
+| lr | 1e-3 |
 | scheduler | warmup + cosine (on) |
-| dropout | none |
-| **valid PPL** | **36.97** |
+| **valid PPL** | **34.18** |
+
+Project target is PPL < 250 → **smashed**; the chase above was for the best number.
+
+---
+
+## 📊 Reminder — run the gap report to analyze overfitting
+
+Before locking decisions (and before/after any regularization), dump the
+train/valid generalization gap per run:
+
+```bash
+python gap_report.py                         # reads runs/, writes reports/overfitting_gaps.csv
+# or: python gap_report.py --runs runs --out reports/gaps.csv
+```
+
+It lists every run by **gap = valid_ppl − train_ppl** (descending: worst overfit on
+top), using the early-stopping epoch. Use it to see *which* runs overfit before
+deciding on dropout / epochs. **Caveat (see Act 3):** the gap is only meaningful for
+**no-dropout** runs — dropout inflates the logged train loss, so dropout rows
+understate the true gap.
 
 ---
 
@@ -109,61 +193,13 @@ overfitting. The clean signal is validation PPL.
 
 - **`ff_dim: auto`** — derived feed-forward width (`ff_mult × d_model`, default 4×),
   keeps comparisons proportionate. Covered by tests in `tests/test_config.py`.
-- **`gap_report.py`** — dumps the train/valid overfitting gap per run to a CSV,
-  so we can *look before we leap* on regularization decisions.
+- **`gap_report.py`** — dumps the train/valid overfitting gap per run to a CSV, so
+  we *look before we leap* on regularization decisions.
 
 ---
 
 ## Next chapters
 
-1. **`finalize`** the current best (d512/l6, no dropout) → the **test PPL**, our
-   one official number. *(Run on the VM — it retrains.)*
-2. **Experiment 3 — weight tying:** does sharing embedding ↔ output weights help?
-3. **Experiment 4 — scheduler ablation:** quantify the warmup+cosine contribution.
-4. **Heads-up:** `03_weight_tying.yaml` and `04_no_scheduler.yaml` still have
-   **dropout enabled (p=0.1)**. Given Act 3, that base is sub-optimal — decide
-   whether to disable dropout there for consistency before running them.
-
----
-
-## ⚙️ Mid-season rewrite — two init bugs fixed
-
-> The numbers in Acts 1–3 above were produced with a flawed weight init and have
-> been (or are being) re-run. Two fixes landed:
->
-> 1. **Embedding init.** `init_weights` ignored `nn.Embedding` (stayed at N(0,1)),
->    and weight tying clobbered the shared matrix to the tiny Linear init →
->    embeddings ~170× off between tied/untied. Now: embeddings `normal(0, 0.02)`,
->    tying-aware. Pre-fix results archived in `reports_pre_fix/`.
-> 2. **Residual scaling — "Lever 1".** Residual-writing projections (`out_proj`,
->    FFN 2nd Linear) now init to `normal(0, 0.02/√(2·num_layers))`, keeping the
->    residual-stream variance constant with depth. Full explainer:
->    `docs/leva1-init-residual-scaling.md`.
->
-> **Post-(embedding-)fix best so far:** `d384/l2` + dropout p0.1 + weight tying,
-> lr 1e-3 → **valid PPL 34.18**. Notably, weight tying now *helps* (as expected
-> once the init was sane). Target of the project is PPL < 250 → already smashed;
-> the chase below is for sport.
-
----
-
-## Act 4 — Lever 1 stress test: can depth finally win? 🏗️ *(results pending)*
-
-**Hypothesis.** With residual-scaled init, the biggest/deepest model should no
-longer underperform a shallow one. Config `05_bigarch.yaml`: the full best recipe
-(lr 1e-3, dropout p0.1, weight tying) on the **largest architecture** we have —
-`d_model=512`, `num_layers=6` (ff_dim 2048 auto). Residual std at init =
-`0.02/√12 ≈ 0.00577`.
-
-| metric | shallow best (`d384/l2`, post-emb-fix) | `d512/l6` + Lever 1 |
-|---|---|---|
-| valid PPL | 34.18 | **_TBD_** |
-| best epoch / epochs run | _TBD_ | **_TBD_** |
-| train_ppl @ best (gap) | _TBD_ | **_TBD_** |
-
-**What we're looking for:** valid PPL **below 34.18**, and a deep model that beats
-the shallow `d384/l2`. If depth now helps, Lever 1 did its job.
-
-**Result:** _to be filled after the run._
-
-➡️ **Carried forward:** _TBD (depends on the result above)._
+1. **`finalize`** the current best (`d384/l2 + p0.1 + tying`, lr 1e-3) → the **test
+   PPL**, our one official number for 1.A. *(Run on the VM — it retrains.)*
+2. Move to **Part 1.B (LoRA)** — its own journal is in `reports/recap_b.md`.

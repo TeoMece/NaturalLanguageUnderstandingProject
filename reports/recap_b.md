@@ -84,6 +84,21 @@ to also score the last token. **Decision for now: keep the lab's behavior.**
 
 ---
 
+## 📊 Reminder — gap report on the LoRA runs
+
+When sweeping `rank` (a bigger rank = more capacity = more overfitting risk), check
+the train/valid gap:
+
+```bash
+python gap_report.py --runs runs_b --out reports/overfitting_gaps_b.csv
+```
+
+Bonus: in 1.B the gap is **fully trustworthy** — we use no dropout (only the LoRA
+adapters train, base frozen), so the logged train loss isn't inflated the way it was
+in 1.A's dropout runs.
+
+---
+
 ## Current best config (Part 1.B) 🏆
 
 | field | value |
