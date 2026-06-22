@@ -1,0 +1,8 @@
+# Esperimento B0 - Baseline LoRA: ricerca del learning rate, rank/alpha fissi.
+# Lo sweep genera 3 run (una per valore di lr).
+base: ../base_partB.yaml
+override:
+  experiment:
+    name: partB_baseline
+sweep:
+  optim.lr: [1.0e-3, 5.0e-4, 1.0e-4]

@@ -1,0 +1,14 @@
+# Smoke test della pipeline B: gira velocissimo per verificare che tutto funzioni.
+# Pochissime frasi e 1 epoca: NON produce risultati validi, serve solo a controllare
+# che data -> GPT2_LoRA.from_pretrained -> fit -> salvataggio non abbiano bug.
+# Uso: python run_b.py run --config configs/experiments_b/_smoke.yaml
+base: ../base_partB.yaml
+override:
+  experiment:
+    name: partB_smoke
+  data:
+    max_samples: 16    # solo 16 frasi di training
+    batch_size: 4
+  optim:
+    epochs: 1
+    patience: 1

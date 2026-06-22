@@ -1,0 +1,11 @@
+# Esperimento B1 - Sweep del rango LoRA (richiesto dal lab: "experiment with rank").
+# Eredita dal baseline il miglior lr; varia solo il rank. rank piu' alto = adapter
+# piu' espressivi ma piu' parametri; cerchiamo il punto migliore per la PPL.
+base: ../base_partB.yaml
+override:
+  experiment:
+    name: partB_rank
+  optim:
+    lr: 1.0e-3        # <- sostituire col miglior lr trovato in 00_baseline
+sweep:
+  model.rank: [4, 8, 16]

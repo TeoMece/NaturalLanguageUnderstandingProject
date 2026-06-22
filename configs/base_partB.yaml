@@ -1,0 +1,23 @@
+# Configurazione di base per la Parte 1.B (GPT2 PRE-ADDESTRATO + LoRA su Penn Treebank).
+# Gli esperimenti in configs/experiments_b/ ereditano da questo file con
+# `base: ../base_partB.yaml` e ne sovrascrivono solo i campi necessari.
+experiment:
+  name: partB          # nome usato per la cartella della run (sotto runs_b/)
+  seed: 42             # seed globale per la riproducibilita'
+  device: auto         # auto -> cuda | mps | cpu (risolto a runtime)
+data:
+  fraction: 1.0        # frazione di frasi di train usate (1.0 = tutte)
+  max_samples: null    # alternativa a fraction: numero assoluto di frasi
+  subset_seed: 42      # seed per il sottocampionamento riproducibile
+  batch_size: 8        # GPT2 pre-addestrato e' grande: batch piccolo per la memoria
+model:
+  name: openai-community/gpt2   # checkpoint HuggingFace da cui partire (pesi pre-addestrati)
+  rank: 8              # rango r degli adapter LoRA (da sweeppare: 4/8/16)
+  alpha: 16            # fattore di scala alpha degli adapter LoRA (da sweeppare: 16/32)
+optim:
+  lr: 1.0e-3           # learning rate per AdamW sugli adapter (da tarare)
+  optimizer: adamw
+  epochs: 10           # il fine-tuning LoRA converge in poche epoche
+  grad_clip: 1.0       # clipping della norma del gradiente
+  patience: 3          # epoche senza miglioramento di valid PPL prima dello stop
+mode: dev              # dev -> valuta su valid | final -> full dataset + valuta su test

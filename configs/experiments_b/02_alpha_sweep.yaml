@@ -1,0 +1,13 @@
+# Esperimento B2 - Sweep di alpha LoRA (richiesto dal lab: "experiment with alpha").
+# Eredita dal baseline il miglior lr e dal rank-sweep il miglior rank; varia alpha.
+# alpha controlla l'ampiezza dell'adattamento (scaling = alpha/rank).
+base: ../base_partB.yaml
+override:
+  experiment:
+    name: partB_alpha
+  optim:
+    lr: 1.0e-3        # <- miglior lr da 00_baseline
+  model:
+    rank: 8           # <- miglior rank da 01_rank_sweep
+sweep:
+  model.alpha: [16, 32]
