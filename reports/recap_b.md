@@ -32,22 +32,27 @@ Smoke check (CPU/MPS, 16 sentences, 1 epoch): pipeline runs end-to-end, only
 ## Act 1 — Baseline: hunting the learning rate
 
 Fixed `rank=8`, `alpha=16`; swept the learning rate `{1e-3, 5e-4, 1e-4}`.
+(~45 min/run on the V100.)
 
 | lr | valid PPL |
 |------|-----------|
-| 1e-3 | _TBD_ |
-| 5e-4 | _TBD_ |
-| **1e-4** | **_TBD_** ← winner (lowest lr) |
+| 1e-3 | 23.28 |
+| **5e-4** | **22.61** ← winner |
+| 1e-4 | 23.87 |
 
-**Discovery — and it's the *opposite* of 1.A, on purpose.** In 1.A (from scratch)
-a mid lr won and too-cold (1e-4) lost: a random-init model must move *far* in few
-epochs. Here the **lowest lr wins**, which is exactly the fine-tuning signature:
-the pre-trained model is *already good*, the adapters start *at zero*, so big steps
-**disrupt** useful pre-trained behavior — small, careful steps win. Not a bug: the
-textbook intuition that *fine-tuning wants smaller lr than training-from-scratch*.
+**Discovery — Goldilocks, and it lands on the *same* lr as 1.A.** The middle lr
+(5e-4) wins; too hot (1e-3) overshoots a little, and too cold (1e-4) is actually
+the **worst**. The "too cold" loss is the telling part: the adapters start at
+`B = 0` (i.e. exactly *at* the pre-trained model), so with too small a step they
+barely depart from the frozen base in the epoch budget → underfitting. 5e-4 is the
+sweet spot — the very same anchor 1.A's baseline found.
 
-➡️ **Carried forward: lowest lr (1e-4).** Worth trying an even lower point (e.g.
-**5e-5**) next time, since the trend points down.
+Note the **absolute level**: ~22–24 valid PPL, versus ~37 for 1.A's from-scratch
+baseline and a project target of < 250. Pre-trained + LoRA is already far below
+both — Part 1.B's job (beat 1.A, stay < 250) is comfortably in hand; the sweeps
+below are to squeeze out the best number.
+
+➡️ **Carried forward: lr = 5e-4.** (No reason to go lower — 1e-4 was the worst.)
 
 ---
 
@@ -87,6 +92,6 @@ to also score the last token. **Decision for now: keep the lab's behavior.**
 | LoRA on | Q, K, V (all 12 layers, independent adapters) |
 | rank | 8 _(baseline; to be swept)_ |
 | alpha | 16 _(baseline; to be swept)_ |
-| lr | **1e-4** _(baseline winner)_ |
+| lr | **5e-4** _(baseline winner)_ |
 | trainable params | 442,368 (~0.35% of 124M) |
-| **valid PPL** | **_TBD_** |
+| **valid PPL** | **22.61** _(baseline; pre-sweep)_ |
