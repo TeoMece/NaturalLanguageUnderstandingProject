@@ -16,7 +16,11 @@
 | partA_baseline__lr0.0001 | 0.0001 | 37.49 | - | 29203537 | 1303.7 |
 | partA_arch__d_model512__num_layers2 | 0.001 | 37.96 | - | 58343505 | 1123.9 |
 | partA_bigarch | 0.001 | 38.72 | - | 45221457 | 3734.7 |
+| partA_bigarch_dropout__p0.1 | 0.001 | 38.72 | - | 45221457 | 3729.9 |
 | partA_dropout__p0.4 | 0.001 | 39.40 | - | 42590545 | 1410.8 |
 | partA_arch__d_model512__num_layers4 | 0.001 | 39.78 | - | 64648273 | 1495.0 |
 | partA_arch__d_model512__num_layers6 | 0.001 | 40.97 | - | 70953041 | 2179.4 |
+| partA_bigarch_dropout__p0.2 | 0.001 | 44.85 | - | 45221457 | 3991.9 |
+| partA_bigarch_dropout__p0.3 | 0.001 | 45.92 | - | 45221457 | 3993.9 |
+| partA_bigarch_dropout__p0.4 | 0.001 | 47.54 | - | 45221457 | 3992.6 |
 | partA_dropout__p0.5 | 0.001 | 47.97 | - | 42590545 | 2516.0 |
