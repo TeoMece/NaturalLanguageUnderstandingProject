@@ -4,7 +4,7 @@
 base: ../base_partB.yaml
 override:
   experiment:
-    name: partB_alpha
+    name: partB_alphaEight
   optim:
     lr: 5.0e-4        # miglior lr da 00_baseline (valid PPL 22.61)
   model:
