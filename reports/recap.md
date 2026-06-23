@@ -135,6 +135,16 @@ trustworthy for **no-dropout** runs: training loss is logged with dropout *activ
 (inflated), so the gap on dropout rows is an artifact. Use **`gap_report.py`** (see
 the reminder near the end) on the no-dropout runs to read overfitting honestly.
 
+📌 **For the final report — gradient clipping is a (hidden) regularizer.** Our tight
+clip (`grad_clip=1.0`) caps each update step, so the model fits more conservatively
+and overfits *less* — which is *why* our dropout sweet spot is low (p=0.1; more
+hurts). A looser clip (e.g. 5) lets the model fit harder, so a heavier dropout (e.g.
+0.3) can help instead. So the best dropout is **not universal**: it depends on the
+clip ↔ dropout ↔ overfitting interaction — not luck. Worth stating when we justify
+the dropout choice (it also explains why another solution to the same exercise can
+land on a different dropout value). What gradient clipping *is*, in detail:
+`docs/2026-06-15-lm-pipeline-part1a-design.md` §13.
+
 ➡️ **Carried forward: dropout p=0.1.**
 
 ---
