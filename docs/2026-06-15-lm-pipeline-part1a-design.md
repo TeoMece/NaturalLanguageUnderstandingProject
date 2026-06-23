@@ -243,3 +243,32 @@ Decise:
 Ancora aperto (da rifinire in fase di piano):
 - formato esatto della tabella LaTeX (colonne) — da rifinire guardando il template;
 - valori di default di `warmup_steps` ed epoche, da tarare sui primi run.
+
+## 13. Nota: gradient clipping (cos'è e perché conta come regolarizzatore)
+
+`optim.grad_clip` (default **1.0**) limita la dimensione del passo di aggiornamento.
+
+**Cos'è.** Durante il training: forward → loss → `backward` (calcola il gradiente, cioè
+di quanto/in che direzione muovere ogni peso) → l'optimizer aggiorna i pesi di un passo
+proporzionale al gradiente. A volte il gradiente diventa **enorme** (gli "exploding
+gradients", frequenti nei Transformer e soprattutto a inizio training con pesi casuali):
+un gradiente enorme → aggiornamento enorme → il modello salta in una zona pessima e la
+loss diverge (NaN). Il clipping mette un tetto.
+
+**Come (clip-by-norm globale, in `train.py`).** Si concatenano i gradienti di tutti i
+pesi in un unico vettore `g`; se la sua lunghezza `‖g‖ = √(Σ gᵢ²)` supera la soglia `c`,
+si riscala l'intero vettore: `g ← g·(c/‖g‖)` (così `‖g‖ = c`). Si taglia la **lunghezza**,
+non la **direzione**: vai comunque dove indica il gradiente, solo senza fare un passo
+troppo lungo (come un limitatore di velocità: lo sterzo resta, il top speed è capato).
+Nel codice: `nn.utils.clip_grad_norm_(model.parameters(), grad_clip)` tra `backward()` e
+`optimizer.step()`. Nato per la **stabilità**; va in coppia col **warmup** dello scheduler
+(entrambi domano l'instabilità iniziale).
+
+**Finding rilevante per il report.** La soglia agisce anche come **regolarizzatore**.
+Una soglia stretta (1.0) impone passi piccoli → il modello si adatta in modo più
+conservativo → overfitta meno → il dropout utile è **basso** (nei nostri sweep p=0.1;
+oltre, peggiora). Una soglia più larga (es. 5) lascia fittare più aggressivamente →
+overfitta di più → un dropout più alto (es. 0.3) può aiutare. Quindi il dropout ottimale
+**non è universale**: dipende dall'interazione clip ↔ dropout ↔ overfitting. È questo (non
+il caso) a spiegare perché due implementazioni dello stesso esercizio trovano punti di
+dropout diversi — da dichiarare nel report quando si motiva la scelta del dropout.
