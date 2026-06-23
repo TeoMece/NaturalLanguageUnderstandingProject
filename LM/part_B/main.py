@@ -10,7 +10,7 @@ from utils import build_dataloaders, get_tokenizer
 from functions import eval_loop, pick_device
 
 # Iperparametri della configurazione migliore (congelati dall'export)
-BEST_CONFIG = {'model': {'name': 'openai-community/gpt2', 'rank': 8, 'alpha': 16}, 'data': {'batch_size': 8}}
+BEST_CONFIG = {'experiment': {'name': 'partB_alpha__alpha16__FINAL', 'seed': 42, 'device': 'auto'}, 'data': {'fraction': 1.0, 'max_samples': None, 'subset_seed': 42, 'batch_size': 8}, 'model': {'name': 'openai-community/gpt2', 'rank': 16, 'alpha': 16}, 'optim': {'lr': 0.0005, 'optimizer': 'adamw', 'epochs': 10, 'grad_clip': 1.0, 'patience': 3}, 'mode': 'final'}
 
 if __name__ == "__main__":
     device = pick_device("auto")
