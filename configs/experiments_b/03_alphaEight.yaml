@@ -8,5 +8,5 @@ override:
   optim:
     lr: 5.0e-4        # miglior lr da 00_baseline (valid PPL 22.61)
   model:
-    rank: 16           # <- aggiornare col miglior rank da 01_rank_sweep
-    model: 8
+    rank: 16          # miglior rank da 01_rank_sweep
+    alpha: 8          # l'esperimento: scaling = alpha/rank = 8/16 = 0.5 (come il compagno)
