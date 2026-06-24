@@ -67,11 +67,27 @@ the baseline `(256, 2)` as a reproducibility anchor.
 
 ---
 
-## Acts pending (configs ready, lr & arch already carried in)
+## Act 3 — FFN ratio: 4× is best (the convention holds)
 
-- **Act 3 — FFN ratio** (`01b_ffn`): sweep `ff_mult ∈ {2, 4, 8}` at d256/l2. Tests
-  whether a narrower/wider feed-forward helps, in its own step so it doesn't confound
-  the width comparison.
+Swept `ff_mult ∈ {2, 4, 8}` (FFN width = ff_mult × d_model) at d256/l2, in its own step
+so it doesn't confound the width comparison.
+
+| ff_mult (ff_dim) | dev slot F1 | dev intent acc |
+|---|---|---|
+| **4 (1024)** | **96.52** | **98.19** ← winner |
+| 8 (2048) | 95.96 | 97.79 |
+| 2 (512) | 95.58 | 97.19 |
+
+**Discovery.** The canonical **4×** ratio wins; both wider (8×) and narrower (2×) hurt
+— and `ff_mult=4` reproduces 96.52 again (it *is* the baseline). Another "the default is
+already best" result, consistent with the data-limited picture.
+
+➡️ **Carried forward: `ff_mult = 4` (ff_dim = 1024).**
+
+---
+
+## Acts pending (configs ready, lr/arch/ffn already carried in)
+
 - **Act 4 — n_heads** (`01c_heads`): sweep `n_heads ∈ {2, 4, 8}` (256 divisible by all).
   Completes the lab's hyper-parameter list (d_model, n_heads, num_layers, ff_dim).
 - **Act 5 — Dropout** (`02_dropout`): sweep `p ∈ {0.1, 0.2, 0.3, 0.5}` before the heads.

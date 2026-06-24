@@ -10,7 +10,7 @@ override:
   model:
     d_model: 256         # miglior arch (01: dev slot F1 96.52); divisibile per n_heads
     num_layers: 2        # miglior arch (esperimento 01)
-    ff_mult: 4           # <- miglior ff_mult (esperimento 01b)
+    ff_mult: 4           # miglior ff_mult (01b: dev slot F1 96.52)
   optim:
     lr: 5.0e-4           # miglior lr (baseline: dev slot F1 96.52)
 sweep:
