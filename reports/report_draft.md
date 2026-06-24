@@ -63,6 +63,11 @@ parameters. The arc is the project's main message: from scratch, more depth does
 help on PTB (data-limited); the way to exploit a deep 124M model is **pre-training +
 LoRA**, which is exactly what Part B does.
 
+The generalization gap (Fig. 1) supports the regularization choices: the kept
+no-dropout models show only a small valid−train gap, i.e. they are **not strongly
+overfitting**, which is why heavy dropout does not help and our tight gradient clip
+already suffices as a regularizer.
+
 **Table 1 — Part 1.A, best model of each incremental step** (dev PPL; test for the
 final). Final model: `d_model=384`, 2 layers, FFN=1536, dropout 0.1, weight tying.
 
@@ -82,6 +87,12 @@ final). Final model: `d_model=384`, 2 layers, FFN=1536, dropout 0.1, weight tyin
 | 16 | 32 | 0.88M | 21.71 | – |
 | 16 | 8 | 0.88M | 21.60 | – |
 | 16 | 16 | 0.88M | **21.48** | **19.53** |
+
+**Figure 1 — Overfitting gap per run** (`valid − train` PPL, from `gap_report.py`).
+Dropout runs are greyed because their training loss is logged with dropout active and
+their gap is therefore not reliable; the clean (no-dropout) runs show small gaps,
+confirming we are not strongly overfitting. *(Generated on the VM:
+`python gap_report.py` → `reports/figures/overfitting_gaps.pdf`.)*
 
 ## 4. References
 - E. J. Hu et al., “LoRA: Low-Rank Adaptation of Large Language Models,” ICLR 2022.

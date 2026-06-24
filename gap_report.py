@@ -36,6 +36,9 @@ def main():
     ap.add_argument("--runs", default="runs", help="cartella delle run (default: runs)")
     ap.add_argument("--out", default="reports/overfitting_gaps.csv",
                     help="file CSV di output (default: reports/overfitting_gaps.csv)")
+    ap.add_argument("--fig", default=None,
+                    help="PDF della figura (default: reports/figures/<nome_out>.pdf); "
+                         "usa 'none' per non generarla")
     args = ap.parse_args()
 
     records = []
@@ -76,6 +79,37 @@ def main():
         print(f"{r['run']:38s} {r['best_epoch']:>7} {r['epochs_run']:>6} "
               f"{r['train_ppl']:>10.2f} {r['valid_ppl']:>10.2f} {r['gap']:>8.2f}")
     print(f"\nScritto: {args.out}  ({len(records)} run, ordinate per gap decrescente)")
+
+    # --- Figura: barre orizzontali del gap per run (per il report) ---
+    # Le run con dropout sono marcate in grigio: il loro train_ppl e' calcolato col
+    # dropout ATTIVO (loss gonfiata), quindi il loro gap NON e' attendibile (vedi
+    # nota metodologica nei recap). Le run senza dropout sono il segnale pulito.
+    if (args.fig or "").lower() != "none":
+        fig_path = args.fig or os.path.join(
+            "reports", "figures",
+            os.path.splitext(os.path.basename(args.out))[0] + ".pdf")
+        os.makedirs(os.path.dirname(fig_path) or ".", exist_ok=True)
+
+        import matplotlib
+        matplotlib.use("Agg")          # backend headless (salva su file, no display)
+        import matplotlib.pyplot as plt
+
+        # ordine dal basso verso l'alto: gap maggiore in cima
+        rev = list(reversed(records))
+        names = [r["run"] for r in rev]
+        gaps = [r["gap"] for r in rev]
+        # grigio = run con dropout (gap inattendibile); blu = run pulite
+        colors = ["lightgray" if "dropout" in r["run"] else "steelblue" for r in rev]
+
+        plt.figure(figsize=(7, max(2.5, 0.35 * len(rev))))
+        plt.barh(names, gaps, color=colors)
+        plt.axvline(0, color="k", linewidth=0.8)
+        plt.xlabel("gap = valid PPL − train PPL  (più alto = più overfitting)")
+        plt.title("Overfitting gap per run (grigio = dropout: gap inattendibile)")
+        plt.tight_layout()
+        plt.savefig(fig_path)
+        plt.close()
+        print(f"Figura:  {fig_path}")
 
 
 if __name__ == "__main__":
