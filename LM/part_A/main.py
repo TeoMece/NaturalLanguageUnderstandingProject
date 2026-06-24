@@ -10,7 +10,7 @@ from utils import build_dataloaders, get_tokenizer
 from functions import evaluate, pick_device
 
 # Iperparametri della configurazione migliore (congelati dall'export)
-BEST_CONFIG = {'experiment': {'name': 'smoke', 'seed': 1, 'device': 'cpu'}, 'data': {'fraction': 0.01, 'batch_size': 4, 'subset_seed': 1}, 'model': {'pos_emb_size': 128, 'd_model': 32, 'n_heads': 2, 'num_layers': 1, 'ff_dim': 64, 'weight_tying': False, 'dropout': {'enabled': False, 'p': 0.1}}, 'optim': {'lr': 0.001, 'optimizer': 'adamw', 'epochs': 1, 'grad_clip': 1.0, 'patience': 2, 'scheduler': {'enabled': True, 'warmup_steps': 5}}, 'mode': 'dev'}
+BEST_CONFIG = {'experiment': {'name': 'partA_weighttying__FINAL', 'seed': 42, 'device': 'auto', 'tensorboard': False}, 'data': {'fraction': 1.0, 'max_samples': None, 'subset_seed': 42, 'batch_size': 32}, 'model': {'pos_emb_size': 1024, 'd_model': 384, 'n_heads': 4, 'num_layers': 2, 'ff_dim': 1536, 'ff_mult': 4, 'weight_tying': True, 'dropout': {'enabled': True, 'p': 0.1}}, 'optim': {'lr': 0.001, 'optimizer': 'adamw', 'epochs': 30, 'grad_clip': 1.0, 'patience': 5, 'scheduler': {'enabled': True, 'type': 'warmup_cosine', 'warmup_steps': 200}}, 'mode': 'final'}
 
 if __name__ == "__main__":
     device = pick_device("auto")

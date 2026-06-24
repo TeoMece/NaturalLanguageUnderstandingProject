@@ -7,6 +7,8 @@ dropout=0.0 e weight_tying=False si ottiene esattamente il baseline.
 Nota: questo modulo appartiene al livello *puro* della pipeline e NON importa
 nulla da config, experiment o tracking, per garantire massima riusabilita'.
 """
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,7 +20,7 @@ class MultiHeadAttention(nn.Module):
 
     Parametri
     ----------
-    d_model  : dimensione del modello (deve essere divisibile per n_heads)
+    d_model  : dimensione del modello (deve essere divisibile per n_heads), lunghezza del vettore di embedding per token
     n_heads  : numero di teste di attention parallele
     dropout  : probabilita' di dropout (0.0 = nessun dropout, baseline puro)
     """
@@ -38,6 +40,8 @@ class MultiHeadAttention(nn.Module):
 
         # proiezione di output (concat delle teste -> d_model)
         self.out_proj = nn.Linear(d_model, d_model)
+        # Scrive nel residual stream: init scalata 1/sqrt(2*num_layers) (vedi init_weights).
+        self.out_proj._is_residual = True
 
         # Punto dropout 2: sui pesi di attention dopo softmax
         # Regolarizza il pattern di attention durante il training
@@ -60,13 +64,29 @@ class MultiHeadAttention(nn.Module):
         """
         B, L, d_model = x.size()
 
-        # Calcola Q, K, V e suddivide in n_heads teste
-        # Forma risultante: (B, n_heads, L, h_dim)
+        # Calcola Q, K, V e suddivide in n_heads teste.
+        # NB l'ordine conta: prima w_q(x) e' una Linear d_model->d_model che RIMESCOLA
+        # l'intero embedding (ogni dim di output dipende da tutte le d_model di input);
+        # solo DOPO il .view spezza il vettore gia' proiettato in n_heads fette da h_dim.
+        # Quindi ogni testa non vede "un pezzo grezzo" dell'embedding, ma una proiezione
+        # imparata dell'embedding intero -> e' qui che nascono i diversi punti di vista.
+        # La .transpose(1,2) porta n_heads in posizione di "batch" (B, n_heads, L, h_dim):
+        # cosi' il matmul successivo opera SEPARATAMENTE per ogni testa (sulle ultime 2 dim).
+        # IMPORTANTE: questi .view NON sono "solo forma" -> sono l'operazione che CREA le teste
+        # (spezza d_model in n_heads x h_dim) e avviene PRIMA del softmax. E' proprio questo
+        # split a monte ad abilitare il softmax separato per testa (riga ~87): senza, q @ k^T
+        # darebbe UNA sola matrice di attenzione e avremmo una testa sola. La matematica
+        # cambia, non solo le forme. (Il .view di ricomposizione finale, riga ~97, invece e'
+        # necessario solo per le forme e non cambia la distribuzione gia' calcolata.)
         q = self.w_q(x).view(B, L, self.n_heads, self.h_dim).transpose(1, 2)
         k = self.w_k(x).view(B, L, self.n_heads, self.h_dim).transpose(1, 2)
         v = self.w_v(x).view(B, L, self.n_heads, self.h_dim).transpose(1, 2)
 
-        # Scores scalati: (B, n_heads, L, L)
+        # Scores scalati: (B, n_heads, L, L) -> n_heads matrici di attenzione INDIPENDENTI,
+        # una per testa (il matmul e' batchato su B e n_heads). E' questo che distingue il
+        # multi-head da una testa sola: ogni parola puo' guardare cose diverse in teste diverse.
+        # k.transpose(-2,-1) scambia solo le ultime 2 dim (L, h_dim)->(h_dim, L) per allineare
+        # il prodotto q @ k^T: (L, h_dim) @ (h_dim, L) = (L, L) = ogni parola contro ogni parola.
         similarity = (q @ k.transpose(-2, -1)) * (1.0 / torch.sqrt(torch.tensor(self.h_dim, dtype=torch.float)))
 
         # Applica la maschera causale: posizioni future diventano -inf
@@ -79,10 +99,14 @@ class MultiHeadAttention(nn.Module):
         # Punto dropout 2: applica dropout sui pesi di attention
         attn = self.attn_dropout(attn)
 
-        # Weighted sum dei value: (B, n_heads, L, h_dim) -> riporta a (B, L, d_model)
+        # Weighted sum dei value: (B, n_heads, L, h_dim) -> riporta a (B, L, d_model).
+        # La .transpose(1,2) ANNULLA quella di prima (rimette L davanti a n_heads), cosi'
+        # il .view puo' ri-concatenare le fette delle teste affiancate parola per parola.
+        # Il .contiguous() serve perche' la transpose cambia solo gli stride (come si legge
+        # la memoria, non l'ordine fisico); .view invece pretende dati contigui in memoria.
         y = (attn @ v).transpose(1, 2).contiguous().view(B, L, d_model)
 
-        # Proiezione di output che mescola le informazioni tra le teste
+        # Proiezione di output che mescola le informazioni tra le teste (dopo la concat)
         y = self.out_proj(y)
 
         # Punto dropout 3: applica dropout dopo la output projection
@@ -98,7 +122,7 @@ class FeedForward(nn.Module):
 
     Parametri
     ----------
-    d_model    : dimensione di input e output
+    d_model    : dimensione di input e output, lunghezza del vettore di embedding per token
     hidden_dim : dimensione del layer nascosto (es. 4 * d_model)
     dropout    : probabilita' di dropout dopo il secondo linear
     """
@@ -111,6 +135,9 @@ class FeedForward(nn.Module):
             nn.Linear(hidden_dim, d_model),   # proiezione di ritorno
             nn.Dropout(dropout),              # Punto dropout 4: dopo l'ultimo linear
         )
+        # Il 2o Linear (indice 2) scrive nel residual stream: init scalata
+        # 1/sqrt(2*num_layers) (vedi init_weights).
+        self.net[2]._is_residual = True
 
     def forward(self, x):
         return self.net(x)
@@ -181,23 +208,45 @@ class GPT2(nn.Module):
                    Con weight_tying=False i pesi sono indipendenti (baseline).
     """
 
+    # NB: questi default (d_model=768, n_heads=12, num_layers=12, ff_dim=3072) coincidono
+    # con GPT2-small "ufficiale". Ma sono solo i default: negli esperimenti la config li
+    # sovrascrive sempre con valori a scala ridotta (es. num_layers=4 in base_partA.yaml,
+    # sweep [4,6] in 01_arch.yaml), per vincoli di costo. num_layers e d_model NON sono
+    # imposti da GPT2: sono iperparametri che decidiamo/tuniamo noi.
     def __init__(self, vocab_size, pos_emb_size=1024, d_model=768, n_heads=12,
                  num_layers=12, ff_dim=3072, dropout=0.0, weight_tying=False):
         super().__init__()
 
         self.pos_emb_size = pos_emb_size
 
-        # Embedding del token: mappa ogni token id a un vettore d_model-dimensionale
+        # d_model = LARGHEZZA del modello: dimensione del vettore con cui ogni token e'
+        # rappresentato lungo TUTTO il percorso (il "residual stream"). Non e' "il numero
+        # di neuroni": il concetto piu' vicino a una hidden layer di MLP e' semmai ff_dim,
+        # interno al FeedForward. d_model si divide tra le teste: h_dim = d_model / n_heads.
+        # nn.Embedding = TABELLA di lookup imparata, forma (vocab_size, d_model): una riga
+        # per token. Dato un id NON fa calcoli, restituisce la riga corrispondente. I numeri
+        # nella tabella sono parametri: partono random e il training li rende significativi
+        # (parole simili -> vettori vicini, non imposto ma appreso).
+        # Token embedding -> "COSA e' questa parola": id (etichetta senza senso numerico)
+        # diventa un vettore denso su cui si possono fare moltiplicazioni e gradienti.
         self.token_embed = nn.Embedding(vocab_size, d_model)
 
-        # Embedding posizionale: impara una rappresentazione per ogni posizione 0..pos_emb_size-1
+        # Positional embedding -> "DOVE si trova": una riga per posizione 0..pos_emb_size-1.
+        # Serve perche' l'attention DA SOLA ignora l'ordine ("il gatto" == "gatto il" per
+        # q @ k^T). Qui le posizioni sono IMPARATE (scelta di GPT2); il Transformer originale
+        # usava posizioni fisse con seni/coseni. token_embed e pos_embed vengono poi SOMMATI
+        # nel forward (stessa dim d_model): un unico vettore che codifica identita' + posizione.
         self.pos_embed = nn.Embedding(pos_emb_size, d_model)
 
         # Punto dropout 1: applicato alla somma token_embed + pos_embed
         # Regolarizza le rappresentazioni di input prima di entrare nei blocchi
         self.emb_dropout = nn.Dropout(dropout)
 
-        # Stack di TransformerBlock (cuore del modello)
+        # Stack di TransformerBlock (cuore del modello). Il numero di blocchi e' deciso
+        # A PRIORI qui (num_layers) e resta fisso: il forward itera su quelli creati, non
+        # ne aggiunge/toglie. nn.ModuleList (non una lista Python normale) e' essenziale:
+        # registra i sottomoduli, cosi' i loro parametri finiscono in model.parameters(),
+        # si spostano con .to(device) e si salvano nello state_dict.
         self.blocks = nn.ModuleList(
             [TransformerBlock(d_model, n_heads, ff_dim, dropout) for _ in range(num_layers)]
         )
@@ -218,6 +267,18 @@ class GPT2(nn.Module):
         # Maschera causale (triangolare inferiore): il token in posizione i puo' vedere
         # solo le posizioni 0..i (autoregressive masking). Registrata come buffer in modo
         # da essere spostata automaticamente sul dispositivo corretto con .to(device).
+        # torch.tril = TRIangular Lower: prende una matrice di 1 e AZZERA la parte sopra la
+        # diagonale, lasciando 1 sulla diagonale e sotto. Letta come righe=chi guarda,
+        # colonne=chi e' guardato: riga i ha 1 solo in 0..i -> ogni token vede se' e il
+        # passato, mai il futuro. Gli 0 diventano poi -inf nel masked_fill (vedi attention)
+        # e il softmax li annulla. unsqueeze(0)x2: (L,L) -> (1,1,L,L) per broadcast su B e n_heads.
+        #
+        # E' QUESTO a rendere il modello "decoder-only" (stile GPT, generazione):
+        #  - encoder-only (BERT): SI TOGLIE questa maschera -> attenzione bidirezionale,
+        #    ogni token vede tutto; obiettivo = indovinare token mascherati (comprensione).
+        #  - encoder-decoder (T5): due stack + cross-attention (q dal decoder, k/v dall'encoder);
+        #    l'encoder senza maschera, il decoder con. I mattoni (attention, FF, embedding,
+        #    residui, layernorm) restano gli stessi: cambia soprattutto la maschera + l'obiettivo.
         mask = torch.tril(torch.ones(pos_emb_size, pos_emb_size)).unsqueeze(0).unsqueeze(0)
         self.register_buffer("mask", mask)
 
@@ -260,14 +321,59 @@ class GPT2(nn.Module):
 
 
 def init_weights(mat):
-    """Inizializzazione uniforme dei Linear (come nel lab).
+    """Inizializza i pesi stile GPT-2, con residual scaling e tying-aware.
+
+    Due passate, nell'ordine:
+    1. ``nn.Embedding`` -> ``normal(0, 0.02)``. Senza questo, gli Embedding
+       restavano all'init di default N(0,1).
+    2. ``nn.Linear``    -> ``normal(0, 0.02)``, con due eccezioni:
+       - proiezioni RESIDUALI (marcate ``_is_residual``: ``out_proj``
+         dell'attention e il 2o ``Linear`` della FFN) -> ``normal(0, 0.02/sqrt(N))``
+         con ``N = 2 * num_layers`` = numero di proiezioni residuali. E' il trucco
+         di GPT-2 (Leva 1): tiene la varianza del residual stream costante con la
+         profondita', cosi' i modelli profondi si allenano davvero.
+       - pesi condivisi con un Embedding (weight tying:
+         ``lm_head.weight is token_embed.weight``) -> SALTATI, per non
+         sovrascrivere l'init dell'embedding gia' applicato.
+       Il bias e' messo a 0 (standard GPT-2); nel tying NON e' condiviso.
+
+    Cosi' la matrice condivisa mantiene la scala dell'embedding sia con tying
+    attivo sia disattivo (l'unica differenza resta il tying), e la profondita'
+    non gonfia piu' il residuo.
 
     Parametri
     ----------
     mat : nn.Module  — modello o sottomodulo da inizializzare
     """
+    # Passata 1: Embedding -> normal(0, 0.02). Registra gli id dei tensori per
+    # riconoscere i pesi condivisi (tying) nella passata successiva.
+    emb_weight_ids = set()
+    for m in mat.modules():
+        if isinstance(m, nn.Embedding):
+            nn.init.normal_(m.weight, mean=0.0, std=0.02)
+            emb_weight_ids.add(id(m.weight))
+
+    # Residual scaling (Leva 1, trucco GPT-2): le proiezioni che scrivono nel
+    # residual stream (marcate _is_residual: out_proj dell'attention e il 2o
+    # Linear della FFN) vanno inizializzate con std = 0.02 / sqrt(N_residual),
+    # dove N_residual = numero di tali proiezioni = 2 * num_layers. Cosi' la
+    # varianza del residuo resta costante con la profondita'. Contiamo le
+    # proiezioni invece di passare num_layers: e' equivalente e auto-consistente.
+    n_resid = sum(
+        1 for m in mat.modules()
+        if isinstance(m, nn.Linear) and getattr(m, "_is_residual", False)
+    )
+    residual_std = 0.02 / math.sqrt(n_resid) if n_resid > 0 else 0.02
+
+    # Passata 2: Linear -> normal(0, 0.02), tranne: i residuali (std ridotto) e i
+    # pesi condivisi con un Embedding (tying), che restano com'erano (gia' init).
     for m in mat.modules():
         if isinstance(m, nn.Linear):
-            nn.init.uniform_(m.weight, -0.01, 0.01)
+            if id(m.weight) in emb_weight_ids:
+                pass  # peso condiviso (tying): gia' inizializzato come Embedding
+            elif getattr(m, "_is_residual", False):
+                nn.init.normal_(m.weight, mean=0.0, std=residual_std)
+            else:
+                nn.init.normal_(m.weight, mean=0.0, std=0.02)
             if m.bias is not None:
-                m.bias.data.fill_(0.01)
+                m.bias.data.zero_()   # bias a 0 (standard GPT-2)

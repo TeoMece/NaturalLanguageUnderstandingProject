@@ -49,6 +49,12 @@ def pick_device(requested="auto"):
 # Learning-rate schedule: warmup lineare + cosine decay
 # ---------------------------------------------------------------------------
 
+# Perche' scritta a mano e non da libreria: PyTorch ha CosineAnnealingLR (solo decay,
+# SENZA warmup) ma non un warmup+cosine "tutto in uno". L'alternativa sarebbe comporre
+# SequentialLR(LinearLR, CosineAnnealingLR) (piu' verboso/fragile) o importare transformers
+# (get_cosine_schedule_with_warmup), dipendenza enorme per 10 righe. Qui restituiamo solo
+# un MOLTIPLICATORE in [0,1] e lasciamo che LambdaLR faccia lr = lr_base * f(step): leggera,
+# leggibile e testabile (vedi test sulla forma della curva in tests/test_train.py).
 def warmup_cosine_lambda(warmup_steps, total_steps):
     """Ritorna f(step) -> moltiplicatore del lr: salita lineare poi cosine decay.
 

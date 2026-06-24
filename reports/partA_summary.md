@@ -1,5 +1,6 @@
 | name | lr | valid PPL | test PPL | #params | s |
 |---|---|---|---|---|---|
+| partA_weighttying__FINAL | 0.001 | 33.56 | 30.07986425601993 | 23291857 | 1182.4 |
 | partA_weighttying | 0.001 | 34.18 | - | 23291857 | 982.2 |
 | partA_noscheduler | 0.001 | 34.23 | - | 23291857 | 982.2 |
 | partA_dropout__p0.1 | 0.001 | 36.24 | - | 42590545 | 1010.4 |

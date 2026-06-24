@@ -133,8 +133,12 @@ def collate_fn(batch, tokenizer):
     input_ids = tok.input_ids[:, :-1].contiguous()
     labels = tok.input_ids[:, 1:].contiguous()
 
-    # Contiamo solo i token reali (non di padding) per la normalizzazione della loss
-    n_tokens = torch.sum(input_ids != tokenizer.pad_token_id)
+    # Contiamo i token reali (non di padding) su cui viene calcolata la loss.
+    # IMPORTANTE: si contano i token di LABEL, non di input. La CrossEntropyLoss
+    # con ignore_index=pad media sui soli target non-pad; per ottenere una PPL
+    # token-weighted corretta il peso di ogni batch deve usare lo stesso
+    # denominatore della media, cioe' il numero di label non-pad.
+    n_tokens = torch.sum(labels != tokenizer.pad_token_id)
     return input_ids, labels, n_tokens
 
 
@@ -197,6 +201,7 @@ def build_dataloaders(cfg_data, dataset_dir, tokenizer):
     bs = cfg_data.get("batch_size", 32)
     # partial fissa il tokenizer come argomento keyword, rendendo collate_fn
     # compatibile con l'interfaccia DataLoader (che chiama fn(batch))
+    # ora basta un solo parametro (batch) e il tokenizer e' "catturato" nella closure di partial
     coll = partial(collate_fn, tokenizer=tokenizer)
 
     train_dl = DataLoader(PennTreeBank(train_raw), batch_size=bs, collate_fn=coll, shuffle=True)
