@@ -147,10 +147,14 @@ beat the baseline**: the default GPT-2-style config is already at ATIS's ceiling
 | lr | 5e-4 |
 | **dev slot F1** | **96.52** |
 | **dev intent acc** | **98.19** |
-| test | _TBD (run `finalize`)_ |
+| **test slot F1** | **92.13** |
+| **test intent acc** | **96.30** |
 
-**Next:** `python run_nlu.py finalize` (auto-selects the 96.52 config) → test slot F1 +
-intent acc, then `export`.
+**Finalize done.** Test (held-out): **slot F1 92.13%**, **intent acc 96.30%**. The
+dev→test drop (96.52→92.13 on slot F1) is expected — the ATIS test set is harder than
+dev for slot filling, and we score it once, on the final model only. Intent stays high
+(96.30%). **Part 2.A is closed**; remaining ops are mechanical: `export` + push the
+deliverable (`NLU/part_A`).
 
 ---
 
