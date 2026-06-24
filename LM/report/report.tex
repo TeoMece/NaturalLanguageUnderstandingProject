@@ -59,8 +59,12 @@ from the learning rate. Fine-tuning converges in a few epochs.
 
 \section{Results}
 Models are selected on dev and scored on test. Table~\ref{tab:partA} traces Part~A:
-each kept change lowers PPL; on test, the model improves from the baseline's
-\textbf{32.6} to \textbf{30.1} (a direct test-to-test comparison). The generalization
+each kept change lowers PPL; on test, the model improves only modestly from the
+baseline's \textbf{32.6} to \textbf{30.1} (direct test-to-test). The small gain is
+itself a finding: the default baseline (\texttt{d256/l4}) was already a fortunately
+strong starting point---architecture and dropout gave marginal dev gains
+(36.9$\to$36.3$\to$36.2) and \emph{only weight tying} helped substantially
+($\to$33.6), so there was little headroom to recover. The generalization
 gap (Fig.~\ref{fig:gap}), read on the
 clean no-dropout runs (dropout inflates the logged training loss), shows the models
 \emph{overfit} (valid\,$\approx$\,1.5$\times$\,train) and that larger models overfit
@@ -75,7 +79,9 @@ more depth does not help on PTB; the way to exploit a deep 124M model is
 \begin{table}[t]
   \centering
   \caption{Part 1.A --- best model of each incremental step (dev PPL; test for the
-  final). Final: \texttt{d\_model}=384, 2 layers, FFN=1536, dropout 0.1, weight tying.}
+  final). Baseline (Step 0): \texttt{d\_model}=256, 4 layers, FFN=1024, no dropout, no
+  tying, lr 1e-3. Final: \texttt{d\_model}=384, 2 layers, FFN=1536, dropout 0.1, weight
+  tying. (Changes vs.\ baseline: width 256$\to$384, depth 4$\to$2, +dropout, +tying.)}
   \label{tab:partA}
   \begin{tabular}{llrrr}
     \toprule
