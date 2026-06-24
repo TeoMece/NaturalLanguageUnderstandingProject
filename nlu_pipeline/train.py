@@ -80,7 +80,7 @@ def evaluate(loader, crit_slot, crit_intent, model, lang, device):
       decodifichiamo ogni frase troncando all'ultima posizione reale MENO uno (per
       ignorare il token CLS, che non e' uno slot vero).
     - intent_acc: frazione di intent predetti correttamente (argmax).
-    Nota: conll restituisce l'F1 in scala 0-100 (percentuale).
+    Nota: sia la slot F1 (conll) sia l'intent accuracy sono in scala 0-1 (frazioni).
     """
     model.eval()
     total, n = 0.0, 0

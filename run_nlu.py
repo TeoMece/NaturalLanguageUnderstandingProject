@@ -60,7 +60,7 @@ def _finalize(run_name=None):
             print("Nessuna run trovata.")
             return
         cfg = best["config"]
-        print(f"Run migliore: {best['name']} (dev slot F1={best['best_dev_slot_f1']:.2f})")
+        print(f"Run migliore: {best['name']} (dev slot F1={best['best_dev_slot_f1']*100:.2f}%)")
     else:
         cfg = json.load(open(os.path.join(RUNS, run_name, "metrics.json")))["config"]
         print(f"Run forzata: {run_name}")
@@ -70,7 +70,7 @@ def _finalize(run_name=None):
     cfg.setdefault("experiment", {})["name"] = cfg["experiment"]["name"] + "__FINAL"
     run_dir = run_experiment_nlu(cfg, RUNS, DATASET)
     m = json.load(open(os.path.join(run_dir, "metrics.json")))
-    print(f"TEST  slot F1: {m['test_slot_f1']:.2f}  |  intent acc: {m['test_intent_acc']*100:.2f}%")
+    print(f"TEST  slot F1: {m['test_slot_f1']*100:.2f}%  |  intent acc: {m['test_intent_acc']*100:.2f}%")
 
 
 def main():

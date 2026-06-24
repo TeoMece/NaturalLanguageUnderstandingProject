@@ -35,5 +35,5 @@ def test_train_and_eval_smoke():
     assert torch.isfinite(torch.tensor(loss))  # loss finita (non NaN)
 
     f1, acc, _ = evaluate([_batch()], cs, ci, m, _Lang(), "cpu")
-    assert 0.0 <= f1 <= 100.0          # conll F1 in scala percentuale
+    assert 0.0 <= f1 <= 1.0            # conll F1 in scala 0-1 (frazione)
     assert 0.0 <= acc <= 1.0

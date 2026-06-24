@@ -44,8 +44,8 @@ def to_markdown(rows):
     head += "|---|---|---|---|---|---|---|\n"
     body = ""
     for r in rows:
-        body += (f"| {r['name']} | {r['lr']} | {_fmt(r['dev_slot_f1'])} | "
-                 f"{_fmt(r['dev_intent_acc'], pct=True)} | {_fmt(r['test_slot_f1'])} | "
+        body += (f"| {r['name']} | {r['lr']} | {_fmt(r['dev_slot_f1'], pct=True)} | "
+                 f"{_fmt(r['dev_intent_acc'], pct=True)} | {_fmt(r['test_slot_f1'], pct=True)} | "
                  f"{_fmt(r['test_intent_acc'], pct=True)} | {r['n_params']} |\n")
     return head + body
 
@@ -57,8 +57,8 @@ def to_latex(rows):
              r"\midrule"]
     for r in rows:
         name = r["name"].replace("_", r"\_")
-        lines.append(f"{name} & {r['lr']} & {_fmt(r['dev_slot_f1'])} & "
-                     f"{_fmt(r['dev_intent_acc'], pct=True)} & {_fmt(r['test_slot_f1'])} & "
+        lines.append(f"{name} & {r['lr']} & {_fmt(r['dev_slot_f1'], pct=True)} & "
+                     f"{_fmt(r['dev_intent_acc'], pct=True)} & {_fmt(r['test_slot_f1'], pct=True)} & "
                      f"{_fmt(r['test_intent_acc'], pct=True)} & {r['n_params']} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines)
@@ -74,8 +74,8 @@ def write_reports(runs_root, reports_dir):
         f.write(to_markdown(rows))
 
     plt.figure()
-    plt.barh([r["name"] for r in rows], [r["dev_slot_f1"] or 0 for r in rows])
-    plt.xlabel("dev slot F1")
+    plt.barh([r["name"] for r in rows], [100 * (r["dev_slot_f1"] or 0) for r in rows])
+    plt.xlabel("dev slot F1 (%)")
     plt.title("Parte 2.A — confronto run (slot F1 di dev)")
     plt.tight_layout()
     plt.savefig(os.path.join(reports_dir, "figures", "comparison_nlu.pdf"))
