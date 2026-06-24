@@ -13,7 +13,7 @@ from utils import load_atis, IntentsAndSlots, collate_fn, Lang, PAD_TOKEN
 from functions import evaluate, pick_device
 
 # Iperparametri della configurazione migliore (congelati dall'export)
-BEST_CONFIG = {'model': {'d_model': 256, 'n_heads': 4, 'num_layers': 2, 'ff_dim': 1024, 'pos_emb_size': 512}, 'data': {'batch_size': 64}}
+BEST_CONFIG = {'experiment': {'name': 'partA_nlu_baseline__lr0.0005__FINAL', 'seed': 42, 'device': 'auto'}, 'data': {'dataset': 'ATIS', 'batch_size': 64, 'dev_portion': 0.1, 'split_seed': 42}, 'model': {'pos_emb_size': 512, 'd_model': 256, 'n_heads': 4, 'num_layers': 2, 'ff_dim': 1024, 'ff_mult': 4, 'dropout': {'enabled': False, 'p': 0.1}}, 'optim': {'lr': 0.0005, 'optimizer': 'adamw', 'epochs': 50, 'grad_clip': 1.0, 'patience': 5}, 'mode': 'final'}
 
 if __name__ == "__main__":
     device = pick_device("auto")

@@ -1,6 +1,7 @@
 | name | lr | dev slot F1 | dev intent acc | test slot F1 | test intent acc | #params |
 |---|---|---|---|---|---|---|
 | partA_nlu_ffn__ff_mult4 | 0.0005 | 96.52 | 98.19 | - | - | 1973148 |
+| partA_nlu_baseline__lr0.0005__FINAL | 0.0005 | 96.52 | 98.19 | 92.13 | 96.30 | 1973148 |
 | partA_nlu_heads__n_heads4 | 0.0005 | 96.52 | 98.19 | - | - | 1973148 |
 | partA_nlu_arch__d_model256__num_layers2 | 0.0005 | 96.52 | 98.19 | - | - | 1973148 |
 | partA_nlu_baseline__lr0.0005 | 0.0005 | 96.52 | 98.19 | - | - | 1973148 |
