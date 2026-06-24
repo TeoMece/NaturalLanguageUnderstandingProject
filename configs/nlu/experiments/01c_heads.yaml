@@ -8,8 +8,8 @@ override:
   experiment:
     name: partA_nlu_heads
   model:
-    d_model: 256         # <- migliore d_model (esperimento 01); deve essere divisibile per ogni n_heads sotto
-    num_layers: 2        # <- migliore num_layers (esperimento 01)
+    d_model: 256         # miglior arch (01: dev slot F1 96.52); divisibile per n_heads
+    num_layers: 2        # miglior arch (esperimento 01)
     ff_mult: 4           # <- miglior ff_mult (esperimento 01b)
   optim:
     lr: 5.0e-4           # miglior lr (baseline: dev slot F1 96.52)
