@@ -34,7 +34,10 @@ exponential of the per-token cross-entropy. We use AdamW, gradient clipping
 selected on dev; the test set is scored \emph{once}, on the final model of each part.
 
 \textbf{Part A.} Building on the lab's baseline GPT-2 (after \cite{karpathy_mingpt}),
-we tune the learning rate, then grow the architecture one hyper-parameter at a time. A
+we tune the learning rate, then grow the architecture one hyper-parameter at a time,
+keeping the feed-forward width at the canonical $4{\times}\,d_{\text{model}}$
+(the Transformer/GPT-2 convention \cite{vaswani2017attention}) so that varying
+$d_{\text{model}}$ does not also change the FFN ratio and confound the comparison. A
 \emph{moderate, shallow} model (\texttt{d\_model}=384, 2 layers) wins, while
 larger/deeper variants are worse: at PTB scale the bottleneck is \emph{data, not
 capacity}. Dropout in the four required positions helps only marginally ($p$=0.1);
