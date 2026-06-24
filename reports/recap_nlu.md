@@ -111,14 +111,31 @@ across runs (n_heads only re-partitions d_model into heads).
 
 ---
 
-## Acts pending (configs ready, all hyper-params carried in)
+## Act 5 — Dropout: it only hurts
 
-- **Act 5 — Dropout** (`02_dropout`): sweep `p ∈ {0.1, 0.2, 0.3, 0.5}` before the heads.
-- **Finalize**: retrain the overall winner and report **test** slot F1 + intent acc.
+Added dropout before the heads on the best config and swept `p`.
+
+| dropout p | dev slot F1 | dev intent acc |
+|---|---|---|
+| **none** | **96.52** | 98.19 ← best |
+| 0.1 | 96.08 | 97.39 |
+| 0.2 | 95.88 | 97.79 |
+| 0.3 | 95.58 | 97.59 |
+| 0.5 | 92.70 | 98.19 |
+
+**Discovery.** Dropout **monotonically hurts** slot F1 — even the lightest (p=0.1) is
+below no-dropout, collapsing at p=0.5. The model isn't overfitting on ATIS at this
+scale, so removing capacity/adding noise only costs. Same conclusion as Part 1.A:
+regularization doesn't help a data-limited, already-modest model.
+
+➡️ **Carried forward: dropout OFF.** The search is complete.
 
 ---
 
-## Current best config (Part 2.A) 🏆
+## Final model (Part 2.A) 🏆 — and the whole story in one line
+
+The entire incremental search (lr → d_model/layers → FFN → n_heads → dropout) **never
+beat the baseline**: the default GPT-2-style config is already at ATIS's ceiling.
 
 | field | value |
 |---|---|
@@ -126,11 +143,14 @@ across runs (n_heads only re-partitions d_model into heads).
 | num_layers | 2 |
 | ff_dim | 1024 (auto, 4×) |
 | n_heads | 4 |
-| dropout | none (yet) |
+| dropout | **none** (confirmed) |
 | lr | 5e-4 |
 | **dev slot F1** | **96.52** |
 | **dev intent acc** | **98.19** |
-| test | _TBD (finalize)_ |
+| test | _TBD (run `finalize`)_ |
+
+**Next:** `python run_nlu.py finalize` (auto-selects the 96.52 config) → test slot F1 +
+intent acc, then `export`.
 
 ---
 
