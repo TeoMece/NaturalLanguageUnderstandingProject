@@ -86,10 +86,33 @@ already best" result, consistent with the data-limited picture.
 
 ---
 
-## Acts pending (configs ready, lr/arch/ffn already carried in)
+## Act 4 — n_heads: 4 is best (completes the hyper-parameter list)
 
-- **Act 4 — n_heads** (`01c_heads`): sweep `n_heads ∈ {2, 4, 8}` (256 divisible by all).
-  Completes the lab's hyper-parameter list (d_model, n_heads, num_layers, ff_dim).
+Swept `n_heads ∈ {2, 4, 8}` at d256/l2, ff 4× (256 divisible by all). Same param count
+across runs (n_heads only re-partitions d_model into heads).
+
+| n_heads | dev slot F1 | dev intent acc |
+|---|---|---|
+| **4** | **96.52** | 98.19 ← winner |
+| 2 | 96.22 | 96.99 |
+| 8 | 96.11 | **98.39** |
+
+**Discovery.** `n_heads=4` (the default) wins on slot F1 — again the baseline.
+(`n_heads=8` edges intent accuracy at 98.39, the same intent/slot trade-off seen with
+`d384/l2`, but we select on slot F1.)
+
+➡️ **Carried forward: `n_heads = 4`.**
+
+> **Big picture so far:** the whole hyper-parameter search (lr → d_model/layers → FFN →
+> n_heads) **converged back to the baseline config** (`d256/l2`, 4×, 4 heads, lr 5e-4 →
+> dev slot F1 **96.52**): nothing beat it. On small/easy ATIS the default GPT-2-style
+> architecture is already at its ceiling — capacity is not the bottleneck. The remaining
+> lever is **regularization** (Act 5).
+
+---
+
+## Acts pending (configs ready, all hyper-params carried in)
+
 - **Act 5 — Dropout** (`02_dropout`): sweep `p ∈ {0.1, 0.2, 0.3, 0.5}` before the heads.
 - **Finalize**: retrain the overall winner and report **test** slot F1 + intent acc.
 
