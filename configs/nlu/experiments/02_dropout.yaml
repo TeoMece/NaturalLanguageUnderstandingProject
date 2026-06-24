@@ -4,11 +4,12 @@ override:
   experiment:
     name: partA_nlu_dropout
   model:
-    d_model: 300         # <- migliore architettura (esperimento 01)
+    d_model: 256         # <- migliore architettura (esperimento 01)
     num_layers: 2
     dropout:
       enabled: true
   optim:
     lr: 1.0e-3           # <- miglior lr
+# risoluzione piu' fine nella zona bassa (dove di solito sta l'ottimo) + un valore alto
 sweep:
-  model.dropout.p: [0.1, 0.3, 0.5]
+  model.dropout.p: [0.1, 0.2, 0.3, 0.5]

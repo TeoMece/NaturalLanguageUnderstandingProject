@@ -1,5 +1,7 @@
 # Esperimento NLU 1 - Architettura: sweep d_model x num_layers (lr migliore dal baseline).
-# d_model deve essere divisibile per n_heads (=4): 200/4=50, 300/4=75 -> ok.
+# Valori standard che INCLUDONO il baseline (256, 2) come ancora di confronto, e lo
+# bracketano sotto/sopra. Su ATIS (dataset piccolo) ci si aspetta che basti un modello
+# modesto. d_model divisibile per n_heads (=4): 128/4=32, 256/4=64, 384/4=96 -> ok.
 base: ../base_partA_nlu.yaml
 override:
   experiment:
@@ -7,5 +9,5 @@ override:
   optim:
     lr: 1.0e-3            # <- sostituire col miglior lr del baseline
 sweep:
-  model.d_model: [200, 300]
+  model.d_model: [128, 256, 384]
   model.num_layers: [2, 4]

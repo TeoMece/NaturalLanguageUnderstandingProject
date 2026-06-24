@@ -24,6 +24,6 @@ optim:
   lr: 1.0e-3           # learning rate (il valore piu' importante da tarare)
   optimizer: adamw
   epochs: 50           # massimo (early stopping puo' fermare prima)
-  grad_clip: 5.0       # clipping della norma del gradiente
+  grad_clip: 1.0       # clipping della norma del gradiente (coerente con la Parte 1)
   patience: 5          # epoche senza miglioramento di dev slot F1 prima dello stop
 mode: dev              # dev -> valuta su dev | final -> valuta anche su test
