@@ -64,12 +64,14 @@ parameters. The arc is the project's main message: from scratch, more depth does
 help on PTB (data-limited); the way to exploit a deep 124M model is **pre-training +
 LoRA**, which is exactly what Part B does.
 
-The generalization gap (Fig. 1) shows the models **do overfit** on PTB (valid ≈ 1.5×
-train), and **larger/deeper models overfit more and generalize worse** (`d512/l6` has
-both the largest gap and the worst valid PPL) — confirming the data-limited regime.
-Among regularizers, **dropout barely moves the gap** (p=0.1 is near-neutral, more
-hurts), while **weight tying measurably reduces both the gap and the valid PPL**: it is
-the effective regularizer here, not dropout.
+Read on the **clean no-dropout runs only** (dropout inflates the logged training loss,
+so the gap of dropout runs is not comparable), the generalization gap (Fig. 1) shows
+the models **do overfit** on PTB (valid ≈ 1.5× train), and **larger/deeper models
+overfit more and generalize worse** (`d512/l6` is the worst on both) — confirming the
+data-limited regime. Selection uses **validation PPL, computed with dropout off** (the
+fair criterion; the test set is used only once, on the final model): on it **dropout
+helps only marginally** (36.31→36.24, more hurts) while **weight tying is the decisive
+regularizer** (→34.18).
 
 **Table 1 — Part 1.A, best model of each incremental step** (dev PPL; test for the
 final). Final model: `d_model=384`, 2 layers, FFN=1536, dropout 0.1, weight tying.
