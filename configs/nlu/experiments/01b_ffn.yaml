@@ -1,0 +1,16 @@
+# Esperimento NLU 1b - FFN width: sweep del rapporto ff_mult (ff_dim = ff_mult*d_model),
+# "una cosa alla volta", tenendo fissa la migliore architettura trovata in 01_arch.
+# Lo facciamo in uno step separato (e non dentro 01_arch) per non confondere il
+# confronto sulla larghezza d_model col rapporto FFN. ff_mult=4 e' la convenzione
+# Transformer/GPT2; qui testiamo se una FFN piu' stretta (2x) o piu' larga (8x) aiuti.
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_ffn
+  model:
+    d_model: 256         # <- migliore d_model (esperimento 01)
+    num_layers: 2        # <- migliore num_layers (esperimento 01)
+  optim:
+    lr: 1.0e-3           # <- miglior lr (baseline)
+sweep:
+  model.ff_mult: [2, 4, 8]

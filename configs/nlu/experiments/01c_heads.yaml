@@ -1,0 +1,17 @@
+# Esperimento NLU 1c - n_heads: sweep del numero di teste di attention, "una cosa alla
+# volta", tenendo fissa la migliore config trovata finora. Completa la lista del lab
+# (d_model, n_heads, num_layers, ff_dim).
+# VINCOLO: d_model deve essere divisibile per n_heads. Con d_model=256: 2,4,8 -> ok
+# (256/2=128, 256/4=64, 256/8=32). Se cambi d_model, adegua i valori dello sweep.
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_heads
+  model:
+    d_model: 256         # <- migliore d_model (esperimento 01); deve essere divisibile per ogni n_heads sotto
+    num_layers: 2        # <- migliore num_layers (esperimento 01)
+    ff_mult: 4           # <- miglior ff_mult (esperimento 01b)
+  optim:
+    lr: 1.0e-3           # <- miglior lr (baseline)
+sweep:
+  model.n_heads: [2, 4, 8]
