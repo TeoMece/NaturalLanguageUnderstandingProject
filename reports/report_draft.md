@@ -41,8 +41,9 @@ embeddings left at N(0,1) and a residual-stream variance that **grew with depth*
 inverted our early conclusions; fixing it (embeddings N(0,0.02); residual-writing
 projections scaled by 1/√(2·layers), keeping the residual std constant with depth)
 made tying help and the architecture ranking sane. (ii) Our tight **gradient clip**
-(max-norm 1.0) acts as a mild regularizer, which is why the useful dropout is small
-(p=0.1); a looser clip would shift the dropout optimum upward.
+(max-norm 1.0) is itself a mild regularizer, which likely explains why our useful
+dropout is small (p=0.1) whereas a looser clip favors heavier dropout — the optimal
+dropout is **setup-dependent, not universal**.
 
 **Part B.** We implement LoRA manually, without PEFT: each attention layer is replaced
 by a module that injects low-rank matrices `A, B` into the Q, K, V projections,
@@ -63,10 +64,12 @@ parameters. The arc is the project's main message: from scratch, more depth does
 help on PTB (data-limited); the way to exploit a deep 124M model is **pre-training +
 LoRA**, which is exactly what Part B does.
 
-The generalization gap (Fig. 1) supports the regularization choices: the kept
-no-dropout models show only a small valid−train gap, i.e. they are **not strongly
-overfitting**, which is why heavy dropout does not help and our tight gradient clip
-already suffices as a regularizer.
+The generalization gap (Fig. 1) shows the models **do overfit** on PTB (valid ≈ 1.5×
+train), and **larger/deeper models overfit more and generalize worse** (`d512/l6` has
+both the largest gap and the worst valid PPL) — confirming the data-limited regime.
+Among regularizers, **dropout barely moves the gap** (p=0.1 is near-neutral, more
+hurts), while **weight tying measurably reduces both the gap and the valid PPL**: it is
+the effective regularizer here, not dropout.
 
 **Table 1 — Part 1.A, best model of each incremental step** (dev PPL; test for the
 final). Final model: `d_model=384`, 2 layers, FFN=1536, dropout 0.1, weight tying.
@@ -89,10 +92,10 @@ final). Final model: `d_model=384`, 2 layers, FFN=1536, dropout 0.1, weight tyin
 | 16 | 16 | 0.88M | **21.48** | **19.53** |
 
 **Figure 1 — Overfitting gap per run** (`valid − train` PPL, from `gap_report.py`).
-Dropout runs are greyed because their training loss is logged with dropout active and
-their gap is therefore not reliable; the clean (no-dropout) runs show small gaps,
-confirming we are not strongly overfitting. *(Generated on the VM:
-`python gap_report.py` → `reports/figures/overfitting_gaps.pdf`.)*
+Dropout-active runs are greyed (their training loss is logged with dropout on, so the
+gap is inflated and not directly comparable); the clean no-dropout runs (baseline /
+architecture, in blue) show **sizable gaps (≈11–18)** that grow with model size — the
+models overfit, the biggest (`d512/l6`) most. *(File: `reports/figures/overfitting_gaps.pdf`.)*
 
 ## 4. References
 - E. J. Hu et al., “LoRA: Low-Rank Adaptation of Large Language Models,” ICLR 2022.
