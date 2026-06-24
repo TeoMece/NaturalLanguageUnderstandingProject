@@ -1,0 +1,11 @@
+# "Starting point" ONESTO: il modello PRIMA del tuning del learning rate.
+# Usa il lr ingenuo 0.1 (il default del notebook del lab 5, "definitely not good for
+# AdamW"), stessa architettura base (d256/l2). Serve come Step 0 di riferimento nel
+# report: mostra quanto guadagna gia' solo la ricerca del lr (0.1 -> 5e-4).
+# NB: e' una run REALE, non un baseline inventato. Nome unico -> non sovrascrive nulla.
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_starting_point
+  optim:
+    lr: 0.1
