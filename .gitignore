@@ -12,6 +12,7 @@ __pycache__/
 # Artefatti delle run: pesanti (checkpoint). I report restano versionati.
 runs/
 runs_b/
+runs_nlu/
 *.pt
 
 # Virtualenv locale
