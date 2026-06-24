@@ -1,0 +1,16 @@
+# Esperimento 1b - FFN width: sweep del rapporto ff_mult (ff_dim = ff_mult*d_model),
+# "una cosa alla volta", tenendo fissa la miglior architettura di 01_arch (d384/l2).
+# In step separato per non confondere il confronto sulla larghezza d_model col rapporto
+# FFN. ff_mult=4 e' la convenzione Transformer/GPT2; testiamo FFN piu' stretta (2x) o
+# piu' larga (8x). Stato = post-01_arch, prima di dropout/tying.
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_ff
+  model:
+    d_model: 384         # miglior d_model (esperimento 01)
+    num_layers: 2        # miglior num_layers (esperimento 01)
+  optim:
+    lr: 1.0e-3           # miglior lr (baseline post-fix)
+sweep:
+  model.ff_mult: [2, 4, 8]
