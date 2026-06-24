@@ -1,0 +1,14 @@
+# Esperimento NLU 2 - Dropout prima delle teste (sopra la migliore config).
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_dropout
+  model:
+    d_model: 300         # <- migliore architettura (esperimento 01)
+    num_layers: 2
+    dropout:
+      enabled: true
+  optim:
+    lr: 1.0e-3           # <- miglior lr
+sweep:
+  model.dropout.p: [0.1, 0.3, 0.5]

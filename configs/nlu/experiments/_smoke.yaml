@@ -1,0 +1,10 @@
+# Smoke test della pipeline NLU: gira velocissimo per verificare che tutto funzioni.
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_smoke
+  data:
+    batch_size: 8
+  optim:
+    epochs: 1
+    patience: 1

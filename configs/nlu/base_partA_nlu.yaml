@@ -1,0 +1,29 @@
+# Configurazione di base per la Parte 2.A (GPT2 da zero, intent+slot su ATIS).
+# Gli esperimenti in configs/nlu/experiments/ ereditano da qui con
+# `base: ../base_partA_nlu.yaml` e sovrascrivono solo i campi necessari.
+experiment:
+  name: partA_nlu      # nome usato per la cartella della run (sotto runs_nlu/)
+  seed: 42             # seed globale per la riproducibilita'
+  device: auto         # auto -> cuda | mps | cpu (risolto a runtime)
+data:
+  dataset: ATIS        # documentativo (il path e' passato dalla CLI)
+  batch_size: 64
+  dev_portion: 0.10    # 10% del train come dev (split stratificato sull'intent)
+  split_seed: 42       # seed del dev split (riproducibilita')
+model:
+  pos_emb_size: 512    # lunghezza massima di sequenza (le frasi ATIS sono corte)
+  d_model: 256         # dimensione degli embedding / hidden state
+  n_heads: 4           # teste di attention (d_model deve essere divisibile per n_heads)
+  num_layers: 2        # blocchi transformer
+  ff_dim: auto         # 'auto' -> ff_mult * d_model
+  ff_mult: 4           # rapporto FFN (convenzione Transformer/GPT2)
+  dropout:
+    enabled: false     # dropout prima delle teste (miglioria step 2 di 2.A)
+    p: 0.1
+optim:
+  lr: 1.0e-3           # learning rate (il valore piu' importante da tarare)
+  optimizer: adamw
+  epochs: 50           # massimo (early stopping puo' fermare prima)
+  grad_clip: 5.0       # clipping della norma del gradiente
+  patience: 5          # epoche senza miglioramento di dev slot F1 prima dello stop
+mode: dev              # dev -> valuta su dev | final -> valuta anche su test

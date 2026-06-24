@@ -1,0 +1,11 @@
+# Esperimento NLU 1 - Architettura: sweep d_model x num_layers (lr migliore dal baseline).
+# d_model deve essere divisibile per n_heads (=4): 200/4=50, 300/4=75 -> ok.
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_arch
+  optim:
+    lr: 1.0e-3            # <- sostituire col miglior lr del baseline
+sweep:
+  model.d_model: [200, 300]
+  model.num_layers: [2, 4]

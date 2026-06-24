@@ -1,0 +1,8 @@
+# Esperimento NLU 0 - Baseline: ricerca del learning rate (resto fisso).
+# Lo sweep genera 3 run (una per lr).
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_baseline
+sweep:
+  optim.lr: [1.0e-3, 5.0e-4, 1.0e-4]
