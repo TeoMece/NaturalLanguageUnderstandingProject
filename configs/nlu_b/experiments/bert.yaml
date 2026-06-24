@@ -1,0 +1,8 @@
+# Esperimento 2.B - BERT (encoder): fine-tuning con ricerca del lr.
+# Run salvate come partB_nlu__bert-base-uncased. BERT si scarica al primo uso sulla VM.
+base: ../base_partB_nlu.yaml
+override:
+  model:
+    name: google-bert/bert-base-uncased
+sweep:
+  optim.lr: [5.0e-5, 3.0e-5, 2.0e-5]

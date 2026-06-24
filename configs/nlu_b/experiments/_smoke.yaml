@@ -1,0 +1,13 @@
+# Smoke test della pipeline 2.B: gira veloce per verificare che tutto funzioni.
+# Usa gpt2 (gia' in cache), pochi esempi/1 epoca. NON e' un risultato valido.
+base: ../base_partB_nlu.yaml
+override:
+  experiment:
+    name: partB_nlu_smoke
+  model:
+    name: openai-community/gpt2
+  data:
+    batch_size: 8
+  optim:
+    epochs: 1
+    patience: 1

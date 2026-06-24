@@ -1,0 +1,8 @@
+# Esperimento 2.B - GPT2 (decoder): fine-tuning con ricerca del lr.
+# Run salvate come partB_nlu__gpt2 (lo sweep aggiunge il suffisso del lr).
+base: ../base_partB_nlu.yaml
+override:
+  model:
+    name: openai-community/gpt2
+sweep:
+  optim.lr: [5.0e-5, 3.0e-5, 2.0e-5]

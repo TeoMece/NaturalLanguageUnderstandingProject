@@ -1,0 +1,20 @@
+# Configurazione di base per la Parte 2.B (fine-tuning GPT2/BERT pre-addestrati su ATIS).
+# Il modello si sceglie con `model.name` (qualsiasi id HuggingFace): la run viene salvata
+# come <experiment.name>__<tag-del-modello>, quindi cambiare modello = run distinta.
+experiment:
+  name: partB_nlu      # base del nome run; il tag del modello viene appeso in automatico
+  seed: 42
+  device: auto
+data:
+  batch_size: 16       # modelli grandi: batch piccolo per la memoria GPU
+  dev_portion: 0.10    # dev = 10% del train, stratificato sull'intent
+  split_seed: 42
+model:
+  name: openai-community/gpt2   # id HuggingFace del backbone pre-addestrato
+  intent_pool: null    # null -> dedotto dal nome (bert->[CLS] in testa; gpt2->ultimo token)
+optim:
+  lr: 3.0e-5           # lr piccolo da fine-tuning (NON il 5e-4 di 2.A da-zero)
+  epochs: 5            # il fine-tuning converge in poche epoche
+  grad_clip: 1.0
+  patience: 3          # early stopping su dev slot F1
+mode: dev              # dev -> valuta su dev | final -> valuta anche su test
