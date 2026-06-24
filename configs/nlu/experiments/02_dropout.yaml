@@ -9,7 +9,7 @@ override:
     dropout:
       enabled: true
   optim:
-    lr: 1.0e-3           # <- miglior lr
+    lr: 5.0e-4           # miglior lr (baseline: dev slot F1 96.52)
 # risoluzione piu' fine nella zona bassa (dove di solito sta l'ottimo) + un valore alto
 sweep:
   model.dropout.p: [0.1, 0.2, 0.3, 0.5]

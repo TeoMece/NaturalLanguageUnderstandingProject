@@ -7,7 +7,7 @@ override:
   experiment:
     name: partA_nlu_arch
   optim:
-    lr: 1.0e-3            # <- sostituire col miglior lr del baseline
+    lr: 5.0e-4           # miglior lr (baseline: dev slot F1 96.52)
 sweep:
   model.d_model: [128, 256, 384]
   model.num_layers: [2, 4]

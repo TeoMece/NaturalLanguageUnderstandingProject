@@ -12,6 +12,6 @@ override:
     num_layers: 2        # <- migliore num_layers (esperimento 01)
     ff_mult: 4           # <- miglior ff_mult (esperimento 01b)
   optim:
-    lr: 1.0e-3           # <- miglior lr (baseline)
+    lr: 5.0e-4           # miglior lr (baseline: dev slot F1 96.52)
 sweep:
   model.n_heads: [2, 4, 8]
