@@ -5,3 +5,4 @@ matplotlib
 tqdm
 pytest
 tensorboard
+scikit-learn   # Parte 2 (NLU): split stratificato del dev set (train_test_split)
