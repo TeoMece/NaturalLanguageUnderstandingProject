@@ -7,21 +7,22 @@ su OGNI config di ricerca** (opzione "fedele al lab", media ± std).
 
 ---
 
-## 0. Prerequisito (codice, una volta sola): multi-seed + media ± std
+## 0. Prerequisito multi-seed + media ± std — ✅ FATTO (branch feat/rerun-multiseed)
 
-Senza questo non si può ri-girare "in modo affidabile". Serve in tutte le pipeline
-(`lm_pipeline`, `lm_pipeline_b`, `nlu_pipeline`, `nlu_pipeline_b`):
+- [x] **Run su N seed**: `sweep: { experiment.seed: [42,1,2,3,4] }` → run distinte
+  (`..._seed42`, ...) e il seed viene usato (`set_seed(exp.seed)` in tutti gli experiment).
+  Verificato. Nessuna modifica di codice necessaria.
+- [x] **Aggregatore media ± std**: `seed_summary.py` (standalone, come gap_report) —
+  raggruppa per config (seed rimosso dal nome) e stampa `media ± std` (PPL per LM, slot
+  F1 / intent acc in % per NLU). +2 test.
 
-- [ ] **Run su N seed**: il sweep supporta già le chiavi dotted → `sweep: experiment.seed:
-  [42, 1, 2, 3, 4]`. Va solo verificato che `experiment.seed` finisca nel nome run
-  (suffisso `__seed1`, ...) per non sovrascrivere.
-- [ ] **Aggregatore media ± std**: nuovo — raggruppa le run che condividono la config
-  *tranne il seed* e calcola media e deviazione standard della metrica (PPL per LM,
-  slot F1 / intent acc per NLU). Output: una tabella `X.XX ± Y.YY`.
-- [ ] **N = 5 seed** (es. [42,1,2,3,4]) come default.
-
-> Nota costo: con multi-seed ogni step si moltiplica ×5. ATIS/PTB sono piccoli e le run
-> brevi, ma fai i conti (Parte 2.A da sola: 19 config × 5 ≈ 95 run). Su V100 fattibile.
+**Resta da decidere (scope/costo) prima dei re-run:** dove aggiungere
+`experiment.seed: [...]` e con che N.
+- "tutte le config × N" (opzione 2 scelta) è fedele ma **molto pesante**: es. solo 1.A
+  ≈ 25 config × 5 ≈ 125 run; 2.A 19×5≈95; più 1.B e 2.B → **centinaia di run**.
+- Alternativa pragmatica (più standard): multi-seed sulle **config chiave / finali**
+  (i vincitori di ogni step + il finale), ricerca larga a seed singolo. Rigore dove
+  conta, costo molto minore.
 
 ---
 
