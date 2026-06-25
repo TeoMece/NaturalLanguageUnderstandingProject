@@ -37,8 +37,9 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
 
 ## 1. Parte 1.A (LM, GPT2 da zero) — seed singolo
 
-- [ ] **Portare sul branch i config mancanti** `01b_ff.yaml` e `01c_heads.yaml` (esistono
-  solo su `feat/residual-init`, NON su questo branch) — vanno ricreati qui.
+- [x] **Portare sul branch i config mancanti** `01b_ff.yaml`, `01c_heads.yaml` e
+  `00_starting_point.yaml` — ricreati su `final` (commit 88a8cca). Caricano: ff 3 run,
+  heads 3 run, starting_point 1 run.
 - [ ] **Completare la ricerca iperparametri**: sweep `ff_mult` e `n_heads` (finora solo
   `d_model × num_layers`).
 - [ ] **Starting point onesto**: baseline pre-tuning con **lr ingenuo 0.1** → delta onesto.
