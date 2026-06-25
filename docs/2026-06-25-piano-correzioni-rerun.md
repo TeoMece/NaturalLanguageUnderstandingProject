@@ -80,6 +80,31 @@ Senza questo non si può ri-girare "in modo affidabile". Serve in tutte le pipel
 4. **Aggiornare recap/report** man mano.
 5. **Scrivere i due report** finali.
 
+## 6. Audit copertura parametri del lab (verificato 2026-06-25)
+
+- **1.A**: lr ✅, d_model ✅, num_layers ✅, dropout(4 punti) ✅, weight tying ✅;
+  **mancano `n_heads` e `ff_dim`** → `01b_ff` / `01c_heads` (pronti, da girare). Sono le
+  uniche modifiche del lab non ancora toccate in tutto il progetto.
+- **1.B**: rank ✅, alpha ✅.
+- **2.A**: lr/d_model/num_layers/n_heads/ff_dim ✅ + dropout-prima-delle-teste ✅ → COMPLETO.
+- **2.B**: gpt2 ✅, bert ✅, lr ✅ (gpt2-medium/bert-large opzionali).
+- Vincolo coerenza: `n_heads` deve dividere `d_model` (`[2,4,8]` ok per 256 e 384); gli
+  sweep ff/heads tengono fissa la miglior arch del passo precedente ("one at a time").
+
+## 7. Analisi extra per i report (originalità)
+
+- [ ] **Gap di overfitting** per run (`gap_report.py` + figura): già pronto, estendere
+  alle altre parti.
+- [ ] **Fix onesto del gap**: misurare il **train PPL/loss in EVAL mode (dropout off)** a
+  fine training, così il gap `valid − train` non è falsato dal dropout attivo. Piccola
+  aggiunta alla pipeline (un passaggio di eval sul train). Necessario per qualsiasi
+  confronto with/without-dropout.
+- [ ] **Correlazione overfitting ↔ dimensione modello, con/senza dropout** (1.A, LM):
+  griglia fattoriale `d_model {256,384,512} × dropout {0, p}` (num_layers fisso) +
+  script di plot "gap vs dimensione" con due linee (dropout on/off). Usa il gap onesto
+  del punto sopra. Mostra: modelli più grandi overfittano di più; il dropout chiude il
+  gap. Bella figura di originalità per il report LM.
+
 ## Cosa NON va rifatto
 - Le **pipeline/codice** (data, modelli, train, export, CLI, test): fatte e testate (58 test verdi).
 - La **metodologia** (dev stratificato, selezione su slot F1 / valid PPL, test sigillato): ok.
