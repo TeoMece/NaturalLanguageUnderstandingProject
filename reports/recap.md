@@ -112,7 +112,7 @@ number → the pipeline is reproducible.
 
 ---
 
-## Act 3 — Dropout: a light touch helps
+## Act 3 — Dropout: marginal (within noise)
 
 Added the 4 dropout points on top of the best architecture (`d384/l2`) and swept
 the rate.
@@ -120,15 +120,18 @@ the rate.
 | dropout p | valid PPL |
 |---|---|
 | none | 36.31 |
-| **0.1** | **36.24** ← best |
+| **0.1** | **36.24** ← nominal best |
 | 0.2 | 36.85 |
 | 0.3 | 37.40 |
 | 0.4 | 39.40 |
 | 0.5 | 47.97 |
 
-**Discovery.** A gentle **p=0.1 helps** (36.24 vs 36.31 with none) — a small but
-real regularization gain at this scale. Beyond that it degrades monotonically, hard
-(p=0.5 → 47.97).
+**Discovery.** `p=0.1` is only **nominally** ahead of no-dropout (36.24 vs 36.31 — a
+0.07 gap, **within likely seed noise**, *not* a clear win); beyond that it degrades
+monotonically (p=0.5 → 47.97). So dropout is essentially **neutral** here, not a real
+improvement — consistent with the data-limited picture (and with Part 2.A, where
+no-dropout is outright best). We keep `p=0.1` as the sweep's nominal best, but the
+effective regularizer in 1.A is **weight tying**, not dropout (see Act 4).
 
 ⚠️ **Methodological note.** The overfitting gap (`valid_ppl − train_ppl`) is only
 trustworthy for **no-dropout** runs: training loss is logged with dropout *active*
@@ -145,7 +148,8 @@ the dropout choice (it also explains why another solution to the same exercise c
 land on a different dropout value). What gradient clipping *is*, in detail:
 `docs/2026-06-15-lm-pipeline-part1a-design.md` §13.
 
-➡️ **Carried forward: dropout p=0.1.**
+➡️ **Carried forward: dropout p=0.1** (nominal best; gain within noise — kept for the
+incremental chain, but credited as ~neutral, not a real improvement).
 
 ---
 
