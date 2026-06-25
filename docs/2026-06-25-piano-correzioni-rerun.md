@@ -16,13 +16,18 @@ su OGNI config di ricerca** (opzione "fedele al lab", media ± std).
   raggruppa per config (seed rimosso dal nome) e stampa `media ± std` (PPL per LM, slot
   F1 / intent acc in % per NLU). +2 test.
 
-**Resta da decidere (scope/costo) prima dei re-run:** dove aggiungere
-`experiment.seed: [...]` e con che N.
-- "tutte le config × N" (opzione 2 scelta) è fedele ma **molto pesante**: es. solo 1.A
-  ≈ 25 config × 5 ≈ 125 run; 2.A 19×5≈95; più 1.B e 2.B → **centinaia di run**.
-- Alternativa pragmatica (più standard): multi-seed sulle **config chiave / finali**
-  (i vincitori di ogni step + il finale), ricerca larga a seed singolo. Rigore dove
-  conta, costo molto minore.
+**SCOPE DECISO (2026-06-25): multi-seed solo su VINCITORI di ogni step + FINALI.** La
+ricerca larga resta a **seed singolo** (per scegliere i vincitori); poi si ripete ×5
+seed solo la config vincente di ogni step e il modello finale → media ± std dove conta.
+Costo gestibile (decine di run), standard.
+
+### Ricetta multi-seed (per ogni vincitore / finale)
+1. crea una config con gli iperparametri vincenti + blocco:
+   `sweep: { experiment.seed: [42, 1, 2, 3, 4] }`  (per il finale aggiungi `mode: final`).
+2. `python run*.py sweep --config <quella_config>`  → 5 run `..._seed42`, `..._seed1`, ...
+3. `python seed_summary.py --runs <runs_dir>`  → tabella **media ± std**.
+Nel report: i numeri chiave (finale, e i confronti decisivi) vanno come media ± std;
+la tabella di ricerca resta a seed singolo, dichiarandolo.
 
 ---
 
