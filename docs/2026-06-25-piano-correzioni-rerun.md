@@ -42,8 +42,10 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
   heads 3 run, starting_point 1 run.
 - [ ] **Completare la ricerca iperparametri**: sweep `ff_mult` e `n_heads` (finora solo
   `d_model × num_layers`).
-- [ ] **Starting point onesto**: baseline pre-tuning con **lr ingenuo 0.1** → delta onesto.
-- [ ] **Aggiornare** report LM (Tab.1) e recap coi nuovi numeri / delta starting_point.
+- [x] ~~Starting point lr 0.1~~ **RIMOSSO (2026-06-25)**: il lab definisce lo Step 0 come
+  la **baseline con ricerca del lr** (`00_baseline`); il delta onesto è baseline→finale.
+  Config `00_starting_point.yaml` eliminati (1.A e 2.A).
+- [ ] **Aggiornare** report LM (Tab.1) e recap coi nuovi numeri (delta baseline→finale).
 - [x] **Onestà dropout**: `p0.1` è within-noise, non un "real gain" (vero regolarizzatore = tying).
 
 ## 2. Parte 1.B (LoRA) — seed singolo
@@ -58,7 +60,7 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
 - [ ] **Multi-seed (×5)** sui **vincitori di ogni step** e sul **finale** → media ± std
   (`experiment.seed` sweep + `seed_summary.py`).
 - [ ] **Aggiornare** recap_nlu (media±std) + scrivere la parte 2.A del report NLU.
-- [x] starting_point lr 0.1 + onestà dropout: già a posto.
+- [x] onestà dropout: già a posto. (starting_point lr 0.1 RIMOSSO 2026-06-25.)
 
 ## 4. Parte 2.B (NLU, GPT2 + BERT pre-addestrati) — branch `feat/part2-nlu` — DA GIRARE
 

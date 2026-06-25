@@ -77,16 +77,13 @@ python seed_summary.py --runs runs_nlu --out reports/seed_summary_nlu.md
 
 python run_nlu.py finalize           # test del migliore (meglio: multi-seed con mode:final)
 python run_nlu.py export             # NLU/part_A
-# NB: 00_starting_point.yaml esiste ma e' DA IGNORARE (non e' uno step della catena).
 ```
 
 ## 3) Parte 1.A — GPT2 da zero (LM) (`run.py`, `runs/`) — SEED SINGOLO
 
 ```bash
-# starting point onesto (lr 0.1) per il delta
-python run.py run --config configs/experiments/00_starting_point.yaml
-
-# ricerca incrementale: lr -> arch -> ff -> heads -> dropout -> weight tying
+# ricerca incrementale (lo Step 0 del lab E' la baseline con ricerca lr):
+# lr -> arch -> ff -> heads -> dropout -> weight tying
 python run.py sweep --config configs/experiments/00_baseline.yaml ; python run.py aggregate
 python run.py sweep --config configs/experiments/01_arch_dyn_ff.yaml ; python run.py aggregate
 #  porta arch in 01b_ff.yaml e 01c_heads.yaml:
