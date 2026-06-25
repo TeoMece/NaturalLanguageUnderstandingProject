@@ -1,4 +1,4 @@
-torch
+torch==2.2.0          # su Linux il wheel di default e' la build CUDA (cu121): ok col driver V100
 transformers==4.38.0
 pyyaml
 matplotlib

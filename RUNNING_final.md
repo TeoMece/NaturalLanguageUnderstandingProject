@@ -10,17 +10,43 @@ ordinati parte-per-parte. Regola d'oro:
 
 ---
 
-## 0. Setup sulla VM (una volta)
+## 0a. Bootstrap nuova VM (Ubuntu 20.04, V100, senza conda — una tantum)
+
+Driver NVIDIA gia' presente (verifica con `nvidia-smi`: deve mostrare la Tesla V100).
+Il sistema ha Python 3.8; il nostro env e' 3.10.13 → si usa Miniconda nella home (no sudo).
+**Auth GitHub via SSH** (la password HTTPS non e' piu' supportata):
+
+```bash
+# --- chiave SSH per GitHub (una volta) ---
+ssh-keygen -t ed25519 -C "teomece@gmail.com" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub      # incolla su GitHub: Settings -> SSH and GPG keys -> New SSH key
+ssh -T git@github.com          # atteso: "Hi TeoMece! You've successfully authenticated"
+
+# --- Miniconda nella home (no sudo) ---
+cd ~ && wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda3
+source $HOME/miniconda3/bin/activate && conda init bash && source ~/.bashrc
+
+# --- repo + ambiente ---
+git config --global user.name "TeoMece" && git config --global user.email "teomece@gmail.com"
+git clone git@github.com:TeoMece/NaturalLanguageUnderstandingProject.git
+cd NaturalLanguageUnderstandingProject && git checkout final && git pull
+conda create -y -n nlu26 python=3.10.13 && conda activate nlu26
+pip install --upgrade pip && pip install -r requirements.txt
+python -c "import torch; print('CUDA:', torch.cuda.is_available(), '|', torch.cuda.get_device_name(0))"
+python -m pytest -q             # 60 test verdi = ambiente sano
+```
+
+## 0b. Setup ad ogni sessione
 
 ```bash
 ssh disi@<IP_VM>
 tmux new -s final
 cd ~/NaturalLanguageUnderstandingProject
+conda activate nlu26
 git fetch --all --prune && git checkout final && git pull
-rm -rf runs runs_b runs_nlu runs_nlu_b        # clean slate delle run
-source .venv/bin/activate                     # o: conda activate nlu26
+rm -rf runs runs_b runs_nlu runs_nlu_b        # clean slate delle run (solo al primo giro!)
 python -c "import torch; print('CUDA:', torch.cuda.is_available())"   # True
-pip install -r requirements.txt               # include scikit-learn
 ```
 
 Ordine consigliato: **2.B → 2.A → 1.A → 1.B**. (2.B prima perché è l'unica mai girata.)
