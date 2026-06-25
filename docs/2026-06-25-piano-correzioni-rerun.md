@@ -31,36 +31,33 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
 
 ---
 
-## 1. Parte 1.A (LM, GPT2 da zero) — branch `feat/residual-init`
+> **Tutto il lavoro è su un unico branch (la "versione corretta").** Il multi-seed
+> (media±std) riguarda **SOLO la Parte 2** (lo chiede il lab 5/NLU); la **Parte 1 resta
+> a seed singolo** (il lab 4/LM non lo richiede).
 
-- [ ] **Completare la ricerca iperparametri**: girare gli sweep mancanti `ff_mult`
-  (`configs/experiments/01b_ff.yaml`) e `n_heads` (`01c_heads.yaml`) — **config già
-  pronti** sul branch. (Finora swippati solo `d_model × num_layers`.)
-- [ ] **Starting point onesto**: baseline pre-tuning con **lr ingenuo 0.1** (default del
-  lab) → delta baseline→finale onesto. (Config `starting_point` da creare, come per 2.A.)
-- [ ] **Multi-seed** su tutte le config di ricerca → media ± std.
-- [ ] **Aggiornare** `LM/report/report.tex` (Tab.1) e `reports/recap.md` coi nuovi numeri
-  (media±std, eventuali nuovi vincitori, delta dello starting_point).
-- [x] **Onestà dropout**: già corretto (`p0.1` è within-noise, non un "real gain";
-  il regolarizzatore vero è il weight tying).
+## 1. Parte 1.A (LM, GPT2 da zero) — seed singolo
 
-## 2. Parte 1.B (LoRA) — branch `feat/part1b-lora`
+- [ ] **Portare sul branch i config mancanti** `01b_ff.yaml` e `01c_heads.yaml` (esistono
+  solo su `feat/residual-init`, NON su questo branch) — vanno ricreati qui.
+- [ ] **Completare la ricerca iperparametri**: sweep `ff_mult` e `n_heads` (finora solo
+  `d_model × num_layers`).
+- [ ] **Starting point onesto**: baseline pre-tuning con **lr ingenuo 0.1** → delta onesto.
+- [ ] **Aggiornare** report LM (Tab.1) e recap coi nuovi numeri / delta starting_point.
+- [x] **Onestà dropout**: `p0.1` è within-noise, non un "real gain" (vero regolarizzatore = tying).
 
-- [ ] **Starting point onesto**: il GPT2 **pre-addestrato valutato SENZA adapter**
-  (zero-shot) — mostra quanto aggiunge LoRA; in alternativa lr ingenuo. (Forma da
-  decidere.)
-- [ ] **Multi-seed** sulle run di rank/alpha → media ± std (LoRA è veloce, costo basso).
-- [ ] **Aggiornare** `reports/recap_b.md` e la parte LM del report col delta + std.
+## 2. Parte 1.B (LoRA) — seed singolo
 
-## 3. Parte 2.A (NLU, GPT2 da zero) — branch `feat/part2-nlu`
+- [ ] **Starting point onesto**: GPT2 **pre-addestrato SENZA adapter** (zero-shot) — mostra
+  quanto aggiunge LoRA. (Forma da decidere.)
+- [ ] **Aggiornare** recap_b + parte LM del report col delta.
 
-- [ ] **Multi-seed su TUTTE le 19 config di ricerca** (lr 3, arch 6, ff 3, heads 3,
-  dropout 4) → media ± std. (Opzione 2 scelta.) ATIS è piccolo → run brevi.
-- [ ] **Aggiornare** `reports/recap_nlu.md` coi numeri media±std; verificare che il
-  "tutto converge sul baseline" regga (probabile: le differenze sono dentro lo std).
-- [ ] **Scrivere** la parte 2.A del report NLU.
-- [x] starting_point lr 0.1: già girato ma **da ignorare** (non è uno step della catena).
-- [x] Onestà dropout: già a posto (none è il migliore).
+## 3. Parte 2.A (NLU, GPT2 da zero) — multi-seed sui vincitori/finali
+
+- [ ] **Ricerca** (seed singolo): lr → arch → ff → heads → dropout (config già qui).
+- [ ] **Multi-seed (×5)** sui **vincitori di ogni step** e sul **finale** → media ± std
+  (`experiment.seed` sweep + `seed_summary.py`).
+- [ ] **Aggiornare** recap_nlu (media±std) + scrivere la parte 2.A del report NLU.
+- [x] starting_point lr 0.1 + onestà dropout: già a posto.
 
 ## 4. Parte 2.B (NLU, GPT2 + BERT pre-addestrati) — branch `feat/part2-nlu` — DA GIRARE
 
