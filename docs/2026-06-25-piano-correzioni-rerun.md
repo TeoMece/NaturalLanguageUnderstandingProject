@@ -91,19 +91,17 @@ Senza questo non si può ri-girare "in modo affidabile". Serve in tutte le pipel
 - Vincolo coerenza: `n_heads` deve dividere `d_model` (`[2,4,8]` ok per 256 e 384); gli
   sweep ff/heads tengono fissa la miglior arch del passo precedente ("one at a time").
 
-## 7. Analisi extra per i report (originalità)
+## 7. Analisi extra per i report (originalità) — TENERE MINIMALE
 
-- [ ] **Gap di overfitting** per run (`gap_report.py` + figura): già pronto, estendere
-  alle altre parti.
-- [ ] **Fix onesto del gap**: misurare il **train PPL/loss in EVAL mode (dropout off)** a
-  fine training, così il gap `valid − train` non è falsato dal dropout attivo. Piccola
-  aggiunta alla pipeline (un passaggio di eval sul train). Necessario per qualsiasi
-  confronto with/without-dropout.
-- [ ] **Correlazione overfitting ↔ dimensione modello, con/senza dropout** (1.A, LM):
-  griglia fattoriale `d_model {256,384,512} × dropout {0, p}` (num_layers fisso) +
-  script di plot "gap vs dimensione" con due linee (dropout on/off). Usa il gap onesto
-  del punto sopra. Mostra: modelli più grandi overfittano di più; il dropout chiude il
-  gap. Bella figura di originalità per il report LM.
+Decisione (2026-06-25): stare su una **base pulita** (il report è max 1 pagina).
+
+- [ ] **Gap di overfitting** per run (`gap_report.py` + figura): già pronto, l'unica
+  figura extra che teniamo (è "carina" e non conta nel limite pagina). Le run con
+  dropout sono già marcate (gap inattendibile), quindi è onesto così com'è.
+- [x] ~~Correlazione overfitting ↔ dimensione modello con/senza dropout + fix gap
+  eval-mode~~ → **SCARTATO**: troppo per una pagina, rischia di sporcare il lavoro.
+  (Se mai servisse: richiederebbe griglia fattoriale size×dropout + train PPL in
+  eval-mode per un gap onesto. Non lo facciamo.)
 
 ## Cosa NON va rifatto
 - Le **pipeline/codice** (data, modelli, train, export, CLI, test): fatte e testate (58 test verdi).
