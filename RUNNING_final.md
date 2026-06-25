@@ -109,15 +109,19 @@ python run_nlu.py export             # NLU/part_A
 
 ```bash
 # ricerca incrementale (lo Step 0 del lab E' la baseline con ricerca lr):
-# lr -> arch -> ff -> heads -> dropout -> weight tying
+# lr -> [ablazione scheduler] -> arch -> ff -> heads -> dropout -> weight tying
 python run.py sweep --config configs/experiments/00_baseline.yaml ; python run.py aggregate
+# ablazione ricetta: scheduler OFF sui 3 lr (gemello del baseline) -> contributo dello
+# scheduler e dipendenza dall'lr. Deciso qui una volta; resta ON per tutta la catena.
+python run.py sweep --config configs/experiments/00b_no_scheduler.yaml ; python run.py aggregate
 python run.py sweep --config configs/experiments/01_arch_dyn_ff.yaml ; python run.py aggregate
 #  porta arch in 01b_ff.yaml e 01c_heads.yaml:
 python run.py sweep --config configs/experiments/01b_ff.yaml ; python run.py aggregate
 python run.py sweep --config configs/experiments/01c_heads.yaml ; python run.py aggregate
 python run.py sweep --config configs/experiments/02_dropout.yaml ; python run.py aggregate
 python run.py sweep --config configs/experiments/03_weight_tying.yaml ; python run.py aggregate
-# (opzionali: 04_no_scheduler ablazione; 05_bigarch / 06_bigarch_dropout stress test Leva 1)
+# (opzionali: 05_bigarch / 06_bigarch_dropout stress test Leva 1)
+#  l'ablazione dello scheduler ora e' 00b_no_scheduler, fatta subito dopo il baseline.
 
 python run.py finalize               # test del migliore
 python run.py export                 # LM/part_A

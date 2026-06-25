@@ -1,0 +1,16 @@
+# Esperimento 0b - Ablazione dello scheduler (warmup+cosine), SUBITO dopo il baseline.
+# Gemello di 00_baseline ma con scheduler.enabled=false: stesso sweep dei 3 lr, stessa
+# architettura baseline (d256/l4, no dropout, no tying). Confrontando 00 (scheduler ON)
+# vs 00b (scheduler OFF) sugli STESSI lr isoliamo il contributo dello scheduler e vediamo
+# se dipende dall'lr (atteso: rilevante su lr alti, trascurabile su lr bassi) e se senza
+# scheduler cambia quale lr vince. Lo scheduler resta poi ACCESO come ricetta standard per
+# tutta la catena (arch -> ff -> heads -> dropout -> tying); qui lo decidiamo una volta sola.
+base: ../base_partA.yaml
+override:
+  experiment:
+    name: partA_noscheduler
+  optim:
+    scheduler:
+      enabled: false     # <-- l'ablazione: niente warmup+cosine (lr costante)
+sweep:
+  optim.lr: [1.0e-3, 5.0e-4, 1.0e-4]

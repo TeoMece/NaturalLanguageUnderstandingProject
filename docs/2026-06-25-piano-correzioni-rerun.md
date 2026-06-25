@@ -75,7 +75,9 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
   e i delta onesti (baseline→finale). Dichiarare uso AI; nome/matricola.
 - [ ] **Dichiarare nel report LM lo scheduler warmup+cosine come NOSTRA scelta** (non
   richiesta dal lab): motivazione = stabilità del LM da-zero nelle prime iterazioni +
-  rifinitura finale; contributo quantificato dall'ablazione `04_no_scheduler`.
+  rifinitura finale; contributo quantificato dall'ablazione `00b_no_scheduler` (gemello
+  del baseline: scheduler OFF sui 3 lr, subito dopo il baseline) → mostra anche se il
+  vantaggio dipende dall'lr. Scheduler ON come ricetta standard per il resto della catena.
 - [ ] **Report NLU** (2.A + 2.B): max 1 pagina, encoder vs decoder, media±std.
 - [ ] **Zip di consegna** con i `bin/` (pesi) inclusi (gitignore non li esclude dallo zip).
 
