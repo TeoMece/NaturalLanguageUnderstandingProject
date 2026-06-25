@@ -72,7 +72,10 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
 ## 5. Report finali (consegna)
 
 - [ ] **Report LM** (1.A + 1.B): max 1 pagina, template INTERSPEECH, coi numeri
-  media±std e i delta onesti (starting_point). Dichiarare uso AI; nome/matricola.
+  e i delta onesti (baseline→finale). Dichiarare uso AI; nome/matricola.
+- [ ] **Dichiarare nel report LM lo scheduler warmup+cosine come NOSTRA scelta** (non
+  richiesta dal lab): motivazione = stabilità del LM da-zero nelle prime iterazioni +
+  rifinitura finale; contributo quantificato dall'ablazione `04_no_scheduler`.
 - [ ] **Report NLU** (2.A + 2.B): max 1 pagina, encoder vs decoder, media±std.
 - [ ] **Zip di consegna** con i `bin/` (pesi) inclusi (gitignore non li esclude dallo zip).
 
