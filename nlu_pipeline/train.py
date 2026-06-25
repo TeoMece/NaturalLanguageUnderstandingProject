@@ -12,6 +12,7 @@ import copy
 
 import torch
 import torch.nn as nn
+from tqdm.auto import tqdm
 
 from .conll import evaluate as conll_evaluate
 from .data import PAD_TOKEN
@@ -47,15 +48,17 @@ def _build_optimizer(model, cfg_optim):
 # Train / eval loop
 # ---------------------------------------------------------------------------
 
-def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, grad_clip):
+def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, grad_clip,
+                    show_progress=False, desc="train"):
     """Un'epoca di training multi-task. Ritorna la loss media per batch.
 
     Per ogni batch: forward -> loss = CE_slot + CE_intent -> backward -> (clip) -> step.
     CrossEntropy degli slot vuole input (B, C, L): per questo facciamo permute(0,2,1).
     """
     model.train()
-    total = 0.0
-    for batch in loader:
+    total, seen = 0.0, 0
+    bar = tqdm(loader, desc=desc, leave=False, disable=not show_progress)
+    for batch in bar:
         utt = batch["utterances"].to(device)
         y_slots = batch["y_slots"].to(device)
         intents = batch["intents"].to(device)
@@ -70,10 +73,14 @@ def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, gr
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         optimizer.step()
         total += loss.item()
+        seen += 1
+        if show_progress:
+            bar.set_postfix(loss=f"{total / max(1, seen):.3f}")
     return total / max(1, len(loader))
 
 
-def evaluate(loader, crit_slot, crit_intent, model, lang, device):
+def evaluate(loader, crit_slot, crit_intent, model, lang, device,
+             show_progress=False, desc="eval"):
     """Valuta su un loader. Ritorna (slot_f1, intent_acc, loss_media).
 
     - slot_f1: F1 a chunk via `conll.evaluate` su liste di coppie (parola, slot);
@@ -87,7 +94,7 @@ def evaluate(loader, crit_slot, crit_intent, model, lang, device):
     ref_slots, hyp_slots = [], []
     ref_int, hyp_int = [], []
     with torch.no_grad():
-        for batch in loader:
+        for batch in tqdm(loader, desc=desc, leave=False, disable=not show_progress):
             utt = batch["utterances"].to(device)
             y_slots = batch["y_slots"].to(device)
             intents = batch["intents"].to(device)
@@ -121,7 +128,7 @@ def evaluate(loader, crit_slot, crit_intent, model, lang, device):
     return slot_f1, intent_acc, total / max(1, n)
 
 
-def fit(model, train_loader, dev_loader, cfg_optim, device, lang):
+def fit(model, train_loader, dev_loader, cfg_optim, device, lang, show_progress=False):
     """Training multi-task con early stopping sulla SLOT F1 di dev (massimizzazione).
 
     Scegliamo la slot F1 come criterio perche' lo slot filling e' il task piu' difficile
@@ -145,10 +152,13 @@ def fit(model, train_loader, dev_loader, cfg_optim, device, lang):
     best_f1, best_acc, best_epoch = -1.0, 0.0, 0
     best_state, no_improve = None, 0
 
-    for epoch in range(epochs):
+    epoch_bar = tqdm(range(epochs), desc="epochs", disable=not show_progress)
+    for epoch in epoch_bar:
         tr = train_one_epoch(train_loader, optimizer, crit_slot, crit_intent,
-                             model, device, grad_clip)
-        f1, acc, _ = evaluate(dev_loader, crit_slot, crit_intent, model, lang, device)
+                             model, device, grad_clip,
+                             show_progress=show_progress, desc=f"train e{epoch + 1}/{epochs}")
+        f1, acc, _ = evaluate(dev_loader, crit_slot, crit_intent, model, lang, device,
+                              show_progress=show_progress, desc=f"eval e{epoch + 1}")
         hist["train_loss"].append(tr)
         hist["dev_slot_f1"].append(f1)
         hist["dev_intent_acc"].append(acc)
@@ -160,7 +170,12 @@ def fit(model, train_loader, dev_loader, cfg_optim, device, lang):
         else:
             no_improve += 1
             if no_improve >= patience:
+                epoch_bar.set_postfix(dev_f1=f"{f1 * 100:.2f}", best_f1=f"{best_f1 * 100:.2f}",
+                                      intent=f"{acc * 100:.2f}", no_improve=no_improve)
                 break
+
+        epoch_bar.set_postfix(dev_f1=f"{f1 * 100:.2f}", best_f1=f"{best_f1 * 100:.2f}",
+                              intent=f"{acc * 100:.2f}", no_improve=no_improve)
 
     hist["best_dev_slot_f1"] = best_f1
     hist["best_dev_intent_acc"] = best_acc

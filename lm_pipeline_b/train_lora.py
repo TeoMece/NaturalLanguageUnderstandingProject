@@ -14,6 +14,7 @@ import math
 import copy
 
 import torch
+from tqdm.auto import tqdm
 
 # Riuso da 1.A: selezione del device (logica identica, nessun motivo di duplicarla).
 from lm_pipeline.train import pick_device  # noqa: F401  (riesportato per comodita')
@@ -31,7 +32,8 @@ def _hf_labels(input_ids, pad_id):
     return labels
 
 
-def train_loop(loader, optimizer, model, device, pad_id, grad_clip=None):
+def train_loop(loader, optimizer, model, device, pad_id, grad_clip=None,
+               show_progress=False, desc="train"):
     """Una epoca di training. Ritorna la loss media per token.
 
     Per ogni batch: costruisce i label HF, forward con `labels=` (HF calcola la
@@ -51,7 +53,8 @@ def train_loop(loader, optimizer, model, device, pad_id, grad_clip=None):
     model.train()
     total_loss, total_tokens = 0.0, 0
 
-    for input_ids, _, n_tokens in loader:
+    bar = tqdm(loader, desc=desc, leave=False, disable=not show_progress)
+    for input_ids, _, n_tokens in bar:
         input_ids = input_ids.to(device)
         labels = _hf_labels(input_ids, pad_id)
 
@@ -71,11 +74,13 @@ def train_loop(loader, optimizer, model, device, pad_id, grad_clip=None):
 
         total_loss += loss.item() * int(n_tokens)
         total_tokens += int(n_tokens)
+        if show_progress:
+            bar.set_postfix(loss=f"{total_loss / max(1, total_tokens):.3f}")
 
     return total_loss / max(1, total_tokens)
 
 
-def eval_loop(loader, model, device, pad_id):
+def eval_loop(loader, model, device, pad_id, show_progress=False, desc="eval"):
     """Valuta senza aggiornare i pesi. Ritorna (perplexity, loss media per token).
 
     Perplexity = exp(loss media per token), la metrica standard del LM.
@@ -84,7 +89,8 @@ def eval_loop(loader, model, device, pad_id):
     total_loss, total_tokens = 0.0, 0
 
     with torch.no_grad():
-        for input_ids, _, n_tokens in loader:
+        for input_ids, _, n_tokens in tqdm(loader, desc=desc, leave=False,
+                                           disable=not show_progress):
             input_ids = input_ids.to(device)
             labels = _hf_labels(input_ids, pad_id)
             output = model(input_ids, labels=labels)
@@ -112,7 +118,7 @@ def _build_optimizer(model, cfg_optim):
     raise ValueError(f"optimizer non supportato: {name}")
 
 
-def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id):
+def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id, show_progress=False):
     """Addestra con early stopping su valid-PPL. Rispecchia `lm_pipeline.train.fit`.
 
     Differenze rispetto a 1.A: ottimizza solo i parametri allenabili (LoRA) e usa
@@ -141,9 +147,12 @@ def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id):
     best_state = None
     epochs_no_improve = 0
 
-    for _ in range(epochs):
-        tr_loss = train_loop(train_loader, optimizer, model, device, pad_id, grad_clip)
-        ppl, val_loss = eval_loop(valid_loader, model, device, pad_id)
+    epoch_bar = tqdm(range(epochs), desc="epochs", disable=not show_progress)
+    for ep in epoch_bar:
+        tr_loss = train_loop(train_loader, optimizer, model, device, pad_id, grad_clip,
+                             show_progress=show_progress, desc=f"train e{ep + 1}/{epochs}")
+        ppl, val_loss = eval_loop(valid_loader, model, device, pad_id,
+                                  show_progress=show_progress, desc=f"eval e{ep + 1}")
 
         hist["train_loss"].append(tr_loss)
         hist["valid_loss"].append(val_loss)
@@ -156,7 +165,12 @@ def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id):
         else:
             epochs_no_improve += 1
             if epochs_no_improve >= patience:
+                epoch_bar.set_postfix(val_ppl=f"{ppl:.2f}", best=f"{best_ppl:.2f}",
+                                      no_improve=epochs_no_improve)
                 break
+
+        epoch_bar.set_postfix(val_ppl=f"{ppl:.2f}", best=f"{best_ppl:.2f}",
+                              no_improve=epochs_no_improve)
 
     hist["best_ppl"] = best_ppl
     hist["best_state"] = best_state

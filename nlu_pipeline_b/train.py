@@ -10,6 +10,7 @@ import copy
 
 import torch
 import torch.nn as nn
+from tqdm.auto import tqdm
 
 from .conll import evaluate as conll_evaluate
 from .data import IGNORE
@@ -30,10 +31,12 @@ def _build_optimizer(model, cfg_optim):
     return torch.optim.AdamW(model.parameters(), lr=cfg_optim["lr"])
 
 
-def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, grad_clip):
+def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, grad_clip,
+                    show_progress=False, desc="train"):
     model.train()
-    total = 0.0
-    for b in loader:
+    total, seen = 0.0, 0
+    bar = tqdm(loader, desc=desc, leave=False, disable=not show_progress)
+    for b in bar:
         ids = b["input_ids"].to(device)
         attn = b["attention_mask"].to(device)
         y_slots = b["slot_labels"].to(device)
@@ -47,16 +50,20 @@ def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, gr
             nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         optimizer.step()
         total += loss.item()
+        seen += 1
+        if show_progress:
+            bar.set_postfix(loss=f"{total / max(1, seen):.3f}")
     return total / max(1, len(loader))
 
 
-def evaluate(loader, crit_slot, crit_intent, model, id2slot, device):
+def evaluate(loader, crit_slot, crit_intent, model, id2slot, device,
+             show_progress=False, desc="eval"):
     """Ritorna (slot_f1, intent_acc, loss). Slot ricostruiti a livello di parola."""
     model.eval()
     total, n = 0.0, 0
     ref_slots, hyp_slots, ref_int, hyp_int = [], [], [], []
     with torch.no_grad():
-        for b in loader:
+        for b in tqdm(loader, desc=desc, leave=False, disable=not show_progress):
             ids = b["input_ids"].to(device)
             attn = b["attention_mask"].to(device)
             y_slots = b["slot_labels"].to(device)
@@ -87,7 +94,7 @@ def evaluate(loader, crit_slot, crit_intent, model, id2slot, device):
     return slot_f1, intent_acc, total / max(1, n)
 
 
-def fit(model, train_loader, dev_loader, cfg_optim, device, id2slot):
+def fit(model, train_loader, dev_loader, cfg_optim, device, id2slot, show_progress=False):
     """Fine-tuning multi-task con early stopping su dev slot F1 (massimizzazione)."""
     model.to(device)
     optimizer = _build_optimizer(model, cfg_optim)
@@ -99,10 +106,13 @@ def fit(model, train_loader, dev_loader, cfg_optim, device, id2slot):
 
     hist = {"train_loss": [], "dev_slot_f1": [], "dev_intent_acc": []}
     best_f1, best_acc, best_epoch, best_state, no_imp = -1.0, 0.0, 0, None, 0
-    for ep in range(epochs):
+    epoch_bar = tqdm(range(epochs), desc="epochs", disable=not show_progress)
+    for ep in epoch_bar:
         tr = train_one_epoch(train_loader, optimizer, crit_slot, crit_intent,
-                             model, device, grad_clip)
-        f1, acc, _ = evaluate(dev_loader, crit_slot, crit_intent, model, id2slot, device)
+                             model, device, grad_clip,
+                             show_progress=show_progress, desc=f"train e{ep + 1}/{epochs}")
+        f1, acc, _ = evaluate(dev_loader, crit_slot, crit_intent, model, id2slot, device,
+                              show_progress=show_progress, desc=f"eval e{ep + 1}")
         hist["train_loss"].append(tr)
         hist["dev_slot_f1"].append(f1)
         hist["dev_intent_acc"].append(acc)
@@ -113,7 +123,11 @@ def fit(model, train_loader, dev_loader, cfg_optim, device, id2slot):
         else:
             no_imp += 1
             if no_imp >= patience:
+                epoch_bar.set_postfix(dev_f1=f"{f1 * 100:.2f}", best_f1=f"{best_f1 * 100:.2f}",
+                                      intent=f"{acc * 100:.2f}", no_improve=no_imp)
                 break
+        epoch_bar.set_postfix(dev_f1=f"{f1 * 100:.2f}", best_f1=f"{best_f1 * 100:.2f}",
+                              intent=f"{acc * 100:.2f}", no_improve=no_imp)
     hist["best_dev_slot_f1"] = best_f1
     hist["best_dev_intent_acc"] = best_acc
     hist["best_epoch"] = best_epoch

@@ -67,7 +67,7 @@ def run_experiment_nlu(cfg, runs_root, dataset_dir):
 
     # ---- Training ----
     t0 = time.time()
-    hist = fit(model, train_dl, dev_dl, cfg.get("optim", {}), device, lang)
+    hist = fit(model, train_dl, dev_dl, cfg.get("optim", {}), device, lang, show_progress=True)
     elapsed = time.time() - t0
 
     # ---- Valutazione su test (solo mode 'final') ----

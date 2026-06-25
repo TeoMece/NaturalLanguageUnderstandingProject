@@ -55,7 +55,7 @@ def run_experiment_nlu_b(cfg, runs_root, dataset_dir):
 
     # ---- Fine-tuning ----
     t0 = time.time()
-    hist = fit(model, train_dl, dev_dl, cfg.get("optim", {}), device, id2slot)
+    hist = fit(model, train_dl, dev_dl, cfg.get("optim", {}), device, id2slot, show_progress=True)
     elapsed = time.time() - t0
 
     # ---- Test (solo mode 'final') ----

@@ -86,7 +86,7 @@ def run_experiment_lora(cfg, runs_root, dataset_dir, tokenizer=None):
     # ---- Training (early stopping su valid-PPL) ----
     t0 = time.time()
     hist = fit(model, train_dl, dev_dl, cfg.get("optim", {}), device,
-               pad_id=tokenizer.pad_token_id)
+               pad_id=tokenizer.pad_token_id, show_progress=True)
     elapsed = time.time() - t0
 
     # ---- Valutazione su test (solo mode 'final') ----
