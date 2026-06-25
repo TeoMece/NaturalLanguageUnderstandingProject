@@ -150,7 +150,7 @@ def run_experiment(cfg, runs_root, dataset_dir, tokenizer=None):
     # fit gestisce: spostamento su device, ottimizzatore, scheduler, early stopping
     # Ritorna lo storico delle metriche per epoca piu' best_ppl e best_state
     hist = fit(model, train_dl, dev_dl, cfg.get("optim", {}), device,
-               pad_id=tokenizer.pad_token_id)
+               pad_id=tokenizer.pad_token_id, show_progress=True)
     elapsed = time.time() - t0
 
     # ---- Valutazione su test (solo mode 'final') ----

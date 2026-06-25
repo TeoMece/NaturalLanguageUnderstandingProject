@@ -13,6 +13,7 @@ import copy
 
 import torch
 import torch.nn as nn
+from tqdm.auto import tqdm
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +124,8 @@ def _build_optimizer(model, cfg_optim):
 # Loop di training per una singola epoca
 # ---------------------------------------------------------------------------
 
-def train_one_epoch(loader, optimizer, scheduler, criterion, model, device, grad_clip):
+def train_one_epoch(loader, optimizer, scheduler, criterion, model, device, grad_clip,
+                    show_progress=False, desc="train"):
     """Esegue un'epoca completa di training sul loader dato.
 
     Per ogni batch: forward -> calcolo loss -> backward -> gradient clipping ->
@@ -150,7 +152,11 @@ def train_one_epoch(loader, optimizer, scheduler, criterion, model, device, grad
     model.train()                            # attiva dropout e altri layer train-only
     total_loss, total_tokens = 0.0, 0
 
-    for input_ids, labels, n_tokens in loader:
+    # Barra di avanzamento sui batch (solo se show_progress): leave=False cosi'
+    # sparisce a fine epoca e non sporca il log; disabilitata di default per non
+    # interferire con i test / l'uso come libreria.
+    batches = tqdm(loader, desc=desc, leave=False, disable=not show_progress)
+    for input_ids, labels, n_tokens in batches:
         input_ids = input_ids.to(device)
         labels = labels.to(device)
 
@@ -179,6 +185,12 @@ def train_one_epoch(loader, optimizer, scheduler, criterion, model, device, grad
         total_loss += loss.item() * int(n_tokens)
         total_tokens += int(n_tokens)
 
+        # Mostra la loss media corrente e il lr sulla barra (se attiva)
+        if show_progress:
+            lr_now = optimizer.param_groups[0]["lr"]
+            batches.set_postfix(loss=f"{total_loss / max(1, total_tokens):.3f}",
+                                lr=f"{lr_now:.2e}")
+
     # Loss media per token: metrica indipendente dalla dimensione dei batch
     return total_loss / max(1, total_tokens)
 
@@ -187,7 +199,7 @@ def train_one_epoch(loader, optimizer, scheduler, criterion, model, device, grad
 # Loop di valutazione
 # ---------------------------------------------------------------------------
 
-def evaluate(loader, criterion, model, device):
+def evaluate(loader, criterion, model, device, show_progress=False, desc="eval"):
     """Valuta il modello sul loader dato e calcola perplexity e loss media.
 
     Eseguito in modalita' no_grad (nessun calcolo del gradiente) per efficienza.
@@ -208,8 +220,9 @@ def evaluate(loader, criterion, model, device):
     model.eval()                             # disattiva dropout e layer eval-incompatibili
     total_loss, total_tokens = 0.0, 0
 
+    batches = tqdm(loader, desc=desc, leave=False, disable=not show_progress)
     with torch.no_grad():                    # nessun calcolo del gradiente -> risparmio memoria
-        for input_ids, labels, n_tokens in loader:
+        for input_ids, labels, n_tokens in batches:
             input_ids = input_ids.to(device)
             labels = labels.to(device)
 
@@ -229,7 +242,7 @@ def evaluate(loader, criterion, model, device):
 # Fit: ciclo completo con early stopping
 # ---------------------------------------------------------------------------
 
-def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id):
+def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id, show_progress=False):
     """Addestra il modello con early stopping su valid-PPL.
 
     Orchestra la costruzione dell'ottimizzatore, dello scheduler e il ciclo di
@@ -294,14 +307,18 @@ def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id):
     best_state = None
     epochs_no_improve = 0       # contatore delle epoche senza miglioramento
 
-    for epoch in range(epochs):
+    # Barra esterna sulle epoche (resta a schermo); le barre dei batch sono interne.
+    epoch_bar = tqdm(range(epochs), desc="epochs", disable=not show_progress)
+    for epoch in epoch_bar:
         # ---- Training ----
         tr_loss = train_one_epoch(
-            train_loader, optimizer, scheduler, criterion, model, device, grad_clip
+            train_loader, optimizer, scheduler, criterion, model, device, grad_clip,
+            show_progress=show_progress, desc=f"train e{epoch + 1}/{epochs}",
         )
 
         # ---- Validazione ----
-        ppl, val_loss = evaluate(valid_loader, criterion, model, device)
+        ppl, val_loss = evaluate(valid_loader, criterion, model, device,
+                                 show_progress=show_progress, desc=f"eval e{epoch + 1}")
 
         # Aggiorna lo storico per la curva di apprendimento
         hist["train_loss"].append(tr_loss)
@@ -318,7 +335,13 @@ def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id):
             epochs_no_improve += 1
             if epochs_no_improve >= patience:
                 # Nessun miglioramento per `patience` epoche: interrompe
+                epoch_bar.set_postfix(val_ppl=f"{ppl:.2f}", best=f"{best_ppl:.2f}",
+                                      no_improve=epochs_no_improve)
                 break
+
+        # Riepilogo dell'epoca sulla barra esterna (se attiva)
+        epoch_bar.set_postfix(val_ppl=f"{ppl:.2f}", best=f"{best_ppl:.2f}",
+                              no_improve=epochs_no_improve)
 
     # Aggiunge le informazioni sul best model allo storico
     hist["best_ppl"] = best_ppl
