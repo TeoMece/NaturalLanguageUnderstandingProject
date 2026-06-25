@@ -10,6 +10,6 @@ override:
     d_model: 384         # <- migliore d_model di 01_arch (aggiornare dopo lo sweep)
     num_layers: 2        # <- migliore num_layers di 01_arch
   optim:
-    lr: 1.0e-3           # <- miglior lr del baseline
+    lr: 5.0e-4           # <- miglior lr del baseline (35.67)
 sweep:
   model.ff_mult: [2, 4, 8]

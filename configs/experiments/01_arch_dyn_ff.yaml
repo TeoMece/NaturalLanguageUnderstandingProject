@@ -8,7 +8,7 @@ override:
   experiment:
     name: partA_arch
   optim:
-    lr: 1.0e-3           # miglior lr trovato in 00_baseline
+    lr: 5.0e-4           # miglior lr di 00_baseline (35.67; 1e-3 a 35.70 = pari nel rumore)
 sweep:
   model.d_model: [256, 384, 512]
   model.num_layers: [2, 4, 6]

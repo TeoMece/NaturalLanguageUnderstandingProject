@@ -11,4 +11,4 @@ override:
       enabled: true
       p: 0.1
   optim:
-    lr: 1.0e-3
+    lr: 5.0e-4           # <- miglior lr del baseline (35.67)
