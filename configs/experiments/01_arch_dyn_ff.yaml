@@ -1,8 +1,11 @@
-# Esperimento 1 - Tuning dell'architettura (una modifica alla volta).
-# Lo sweep esplora 3x3 = 9 combinazioni di d_model e num_layers.
-# Vincolo: d_model deve essere divisibile per n_heads (=4 nel base) -> 256/384/512 ok.
+# Esperimento 1 - Tuning dell'architettura: griglia d_model x num_layers (assi
+# accoppiati: larghezza e profondita' interagiscono -> prodotto cartesiano, non
+# one-at-a-time, per non mancare la combinazione ottima). Le leve indipendenti
+# (ff_mult, n_heads, dropout, tying) restano one-change-at-a-time negli step dopo.
+# Lo sweep esplora 4x3 = 12 combinazioni di d_model e num_layers.
+# Vincolo: d_model divisibile per n_heads (=4 nel base) -> 128/256/384/512 tutti ok.
 # ff_dim e' 'auto' nel base (= 4 * d_model), quindi scala da solo con d_model:
-# 256->1024, 384->1536, 512->2048. Modelli proporzionati, confronto pulito.
+# 128->512, 256->1024, 384->1536, 512->2048. Modelli proporzionati, confronto pulito.
 base: ../base_partA.yaml
 override:
   experiment:
@@ -10,5 +13,5 @@ override:
   optim:
     lr: 5.0e-4           # miglior lr di 00_baseline (35.67; 1e-3 a 35.70 = pari nel rumore)
 sweep:
-  model.d_model: [256, 384, 512]
+  model.d_model: [128, 256, 384, 512]
   model.num_layers: [2, 4, 6]
