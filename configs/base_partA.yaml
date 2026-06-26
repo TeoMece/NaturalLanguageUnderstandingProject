@@ -27,7 +27,7 @@ optim:
   optimizer: adamw     # configurabile (adamw default; sgd supportato)
   epochs: 30           # numero massimo di epoche (early stopping puo' fermare prima)
   grad_clip: 1.0       # clipping della norma del gradiente
-  patience: 5          # epoche senza miglioramento di valid PPL prima dello stop
+  patience: 3          # epoche senza miglioramento di valid PPL prima dello stop (3 = piu' veloce)
   scheduler:
     enabled: true      # nel baseline: warmup + cosine decay del learning rate
     type: warmup_cosine

@@ -7,7 +7,7 @@ override:
   experiment:
     name: partA_ff
   model:
-    d_model: 384         # <- migliore d_model di 01_arch (aggiornare dopo lo sweep)
+    d_model: 512         # <- migliore d_model di 01_arch (512x2=35.05, pari a 512x4 nel rumore)
     num_layers: 2        # <- migliore num_layers di 01_arch
   optim:
     lr: 5.0e-4           # <- miglior lr del baseline (35.67)

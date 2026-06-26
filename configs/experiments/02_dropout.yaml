@@ -4,8 +4,8 @@ override:
   experiment:
     name: partA_dropout
   model:
-    d_model: 384         # dimensione degli embedding / hidden state
-    num_layers: 2        # numero di blocchi transformer
+    d_model: 512         # <- migliore d_model di 01_arch (512x2)
+    num_layers: 2        # <- migliore num_layers di 01_arch
     dropout:
       enabled: true
   optim:

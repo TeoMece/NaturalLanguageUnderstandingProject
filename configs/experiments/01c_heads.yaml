@@ -1,12 +1,12 @@
 # Esperimento 1c - n_heads: sweep del numero di teste, "una cosa alla volta", a miglior
 # architettura fissa. Completa la lista del lab (d_model, n_heads, num_layers, ff_dim).
-# VINCOLO: d_model divisibile per n_heads. Con d_model=384: 384/{2,4,8}={192,96,48} ok.
+# VINCOLO: d_model divisibile per n_heads. Con d_model=512: 512/{2,4,8}={256,128,64} ok.
 base: ../base_partA.yaml
 override:
   experiment:
     name: partA_heads
   model:
-    d_model: 384         # <- migliore d_model (deve essere divisibile per ogni n_heads sotto)
+    d_model: 512         # <- migliore d_model (deve essere divisibile per ogni n_heads sotto)
     num_layers: 2        # <- migliore num_layers
     ff_mult: 4           # <- miglior ff_mult di 01b
   optim:
