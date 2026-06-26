@@ -10,8 +10,7 @@ override:
     ff_mult: 2           # <- miglior ff_mult di 01b (35.02)
     n_heads: 8           # <- miglior n_heads di 01c (34.77; 512/8=64)
     dropout:
-      enabled: true
-      p: 0.1             # <- aggiornare col miglior dropout di 02
+      enabled: false     # <- 02: il dropout NON aiuta (p=0.0=34.84 vince, peggiora con p) -> niente dropout
   optim:
     lr: 5.0e-4           # <- miglior lr del baseline (35.67)
     epochs: 50           # stesse condizioni dello step dropout (convergenza regolarizzata)
