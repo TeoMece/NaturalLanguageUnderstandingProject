@@ -8,7 +8,7 @@ override:
   model:
     d_model: 512         # <- migliore d_model (deve essere divisibile per ogni n_heads sotto)
     num_layers: 2        # <- migliore num_layers
-    ff_mult: 4           # <- miglior ff_mult di 01b
+    ff_mult: 2           # <- miglior ff_mult di 01b (35.02)
   optim:
     lr: 5.0e-4           # <- miglior lr del baseline (35.67)
 sweep:
