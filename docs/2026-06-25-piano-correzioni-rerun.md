@@ -82,12 +82,13 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
   modello regolarizzato (rumore del dropout → curva di valid più rumorosa, convergenza più
   lenta) il tempo di convergere, allo step `02_dropout`/`03_weight_tying` abbiamo alzato
   `patience 3→6` ed `epochs 30→50`, e aggiunto `p=0.0` come riferimento NO-dropout alle
-  STESSE condizioni. Conseguenza onesta: il riferimento `p=0.0` dà **34.84**, leggermente
-  diverso dal **34.77** dello step heads (epochs 30). Motivo MECCANICO, non il dropout: lo
-  scheduler cosine usa `total_steps = epochs × batch`, quindi `epochs 30→50` allunga la
-  curva di decay del lr → traiettoria un filo diversa (qui pure marginalmente peggiore).
-  Dentro lo sweep il confronto è consistente (tutte le run a epochs=50): i `p>0` vanno
-  confrontati con **34.84**, non col 34.77. Da esplicitare nel report.
+  STESSE condizioni. Risultato: **`p=0.1` è il migliore (34.55)**, batte il riferimento
+  no-dropout `p=0.0` (**34.84**) di **0.29** a parità di condizioni → con la nuova arch più
+  grande (56M) il dropout LEGGERO aiuta davvero (U-shape: 0.2→35.57, 0.3→36.07, 0.4→38.34).
+  Questo è un gain REALE (sopra il rumore ~0.05), diverso dal vecchio run (29M) dove era
+  within-noise. Nota meccanica: `p=0.0` dà 34.84 vs 34.77 dello step heads (epochs 30) per
+  via dello scheduler (`total_steps=epochs×batch`, `epochs 30→50` allunga il cosine), non
+  per il dropout — il confronto onesto è p=0.1 vs p=0.0 a epochs=50.
 - [ ] **Dichiarare nel report LM l'init con residual scaling (Leva 1, GPT-2)**: le
   proiezioni residuali (`out_proj` attn + 2° Linear FFN) sono init con
   `std = 0.02/sqrt(N)`, `N = 2·num_layers` (= 1/√(2·num_layers) × 0.02) per tenere
