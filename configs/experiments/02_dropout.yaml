@@ -12,7 +12,9 @@ override:
       enabled: true
   optim:
     lr: 5.0e-4           # <- miglior lr del baseline (35.67)
-
-    # NB: portare qui la migliore architettura/lr dei passi precedenti
+    epochs: 50           # col dropout la convergenza e' piu' lenta: piu' tetto di epoche
+    patience: 6          # la curva di validazione col dropout e' piu' rumorosa: piu' pazienza
 sweep:
-  model.dropout.p: [0.1, 0.2, 0.3, 0.4, 0.5]
+  # p=0.0 = riferimento SENZA dropout alle stesse identiche condizioni (epoche/pazienza)
+  # -> confronto equo "dropout vs no-dropout", non confondibile col valore di patience.
+  model.dropout.p: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]

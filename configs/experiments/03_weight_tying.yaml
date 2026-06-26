@@ -14,3 +14,5 @@ override:
       p: 0.1             # <- aggiornare col miglior dropout di 02
   optim:
     lr: 5.0e-4           # <- miglior lr del baseline (35.67)
+    epochs: 50           # stesse condizioni dello step dropout (convergenza regolarizzata)
+    patience: 6          # stesse condizioni dello step dropout (confronto equo tying on/off)
