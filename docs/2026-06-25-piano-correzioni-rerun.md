@@ -88,6 +88,15 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
   curva di decay del lr → traiettoria un filo diversa (qui pure marginalmente peggiore).
   Dentro lo sweep il confronto è consistente (tutte le run a epochs=50): i `p>0` vanno
   confrontati con **34.84**, non col 34.77. Da esplicitare nel report.
+- [ ] **Dichiarare nel report LM l'init con residual scaling (Leva 1, GPT-2)**: le
+  proiezioni residuali (`out_proj` attn + 2° Linear FFN) sono init con
+  `std = 0.02/sqrt(N)`, `N = 2·num_layers` (= 1/√(2·num_layers) × 0.02) per tenere
+  costante la varianza del residual stream con la profondità. È il fix che ha risolto
+  la divergenza della std del baseline iniziale. **Motivazione da dichiarare**: serve a
+  rendere ALLENABILI/COMPETITIVE le architetture più grandi/profonde — senza, i modelli
+  con più layer divergerebbero o renderebbero peggio, falsando lo sweep d_model×num_layers
+  a favore dei piccoli (con il fix 512×4 / 384×6 ecc. sono trainabili ad armi pari).
+  Vedi `docs/leva1-init-residual-scaling.md`.
 - [ ] **Report NLU** (2.A + 2.B): max 1 pagina, encoder vs decoder, media±std.
 - [ ] **Zip di consegna** con i `bin/` (pesi) inclusi (gitignore non li esclude dallo zip).
 
