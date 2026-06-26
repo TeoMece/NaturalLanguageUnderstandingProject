@@ -10,4 +10,4 @@ override:
   model:
     rank: 16           # <- aggiornare col miglior rank da 01_rank_sweep
 sweep:
-  model.alpha: [16, 32]
+  model.alpha: [8, 16, 32]
