@@ -1,6 +1,8 @@
 | name | lr | valid PPL | test PPL | #params | s |
 |---|---|---|---|---|---|
+| partA_dropout__p0.1 | 0.0005 | 34.55 | - | 56244305 | 1110.8 |
 | partA_heads__n_heads8 | 0.0005 | 34.77 | - | 56244305 | 662.7 |
+| partA_dropout__p0.0 | 0.0005 | 34.84 | - | 56244305 | 998.1 |
 | partA_arch__d_model512__num_layers4 | 0.0005 | 35.01 | - | 64648273 | 1129.2 |
 | partA_ff__ff_mult2 | 0.0005 | 35.02 | - | 56244305 | 672.3 |
 | partA_heads__n_heads4 | 0.0005 | 35.02 | - | 56244305 | 662.7 |
@@ -12,11 +14,13 @@
 | partA_arch__d_model384__num_layers6 | 0.0005 | 35.34 | - | 49688401 | 1075.4 |
 | partA_arch__d_model384__num_layers2 | 0.0005 | 35.39 | - | 42590545 | 809.2 |
 | partA_arch__d_model256__num_layers6 | 0.0005 | 35.52 | - | 30783057 | 905.1 |
+| partA_dropout__p0.2 | 0.0005 | 35.57 | - | 56244305 | 1221.4 |
 | partA_arch__d_model512__num_layers6 | 0.0005 | 35.61 | - | 70953041 | 1234.3 |
 | partA_baseline__lr0.0005 | 0.0005 | 35.67 | - | 29203537 | 849.5 |
 | partA_arch__d_model256__num_layers4 | 0.0005 | 35.67 | - | 29203537 | 849.6 |
 | partA_baseline__lr0.001 | 0.001 | 35.70 | - | 29203537 | 853.7 |
 | partA_noscheduler__lr0.0005 | 0.0005 | 35.75 | - | 29203537 | 852.8 |
+| partA_dropout__p0.3 | 0.0005 | 36.07 | - | 56244305 | 1442.3 |
 | partA_arch__d_model256__num_layers2 | 0.0005 | 36.13 | - | 27624017 | 705.0 |
 | partA_noscheduler__lr0.0001 | 0.0001 | 36.25 | - | 29203537 | 1136.0 |
 | partA_noscheduler__lr0.001 | 0.001 | 36.33 | - | 29203537 | 856.0 |
@@ -24,3 +28,4 @@
 | partA_arch__d_model128__num_layers6 | 0.0005 | 37.06 | - | 14237009 | 866.2 |
 | partA_arch__d_model128__num_layers4 | 0.0005 | 37.24 | - | 13840465 | 822.3 |
 | partA_arch__d_model128__num_layers2 | 0.0005 | 37.47 | - | 13443921 | 777.2 |
+| partA_dropout__p0.4 | 0.0005 | 38.34 | - | 56244305 | 2436.1 |
