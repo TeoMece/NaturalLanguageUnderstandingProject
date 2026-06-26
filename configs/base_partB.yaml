@@ -17,7 +17,8 @@ model:
 optim:
   lr: 1.0e-3           # learning rate per AdamW sugli adapter (da tarare)
   optimizer: adamw
-  epochs: 10           # il fine-tuning LoRA converge in poche epoche
+  epochs: 30           # tetto alto: a epochs=10 le run NON erano converse (cap binding) ->
+                       #   lascia decidere all'early stopping (patience), non al cap
   grad_clip: 1.0       # clipping della norma del gradiente
   patience: 3          # epoche senza miglioramento di valid PPL prima dello stop
 mode: dev              # dev -> valuta su valid | final -> full dataset + valuta su test
