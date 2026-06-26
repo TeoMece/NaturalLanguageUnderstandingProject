@@ -40,13 +40,18 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
 - [x] **Portare sul branch i config mancanti** `01b_ff.yaml`, `01c_heads.yaml` e
   `00_starting_point.yaml` — ricreati su `final` (commit 88a8cca). Caricano: ff 3 run,
   heads 3 run, starting_point 1 run.
-- [ ] **Completare la ricerca iperparametri**: sweep `ff_mult` e `n_heads` (finora solo
-  `d_model × num_layers`).
+- [x] **Ricerca iperparametri COMPLETATA** (catena one-at-a-time, valid PPL):
+  lr 5e-4 (35.67) → arch d512×l2 (35.05) → ff_mult 2 (35.02) → n_heads 8 (34.77) →
+  dropout 0.1 (34.55) → weight tying (**33.30**). FINAL: **test PPL 30.38**, 30.5M param.
+  Config: `d512·l2·ff_dim1024·h8·dropout0.1·tying`. Commit 7cf666b (report+export LM/part_A).
 - [x] ~~Starting point lr 0.1~~ **RIMOSSO (2026-06-25)**: il lab definisce lo Step 0 come
   la **baseline con ricerca del lr** (`00_baseline`); il delta onesto è baseline→finale.
   Config `00_starting_point.yaml` eliminati (1.A e 2.A).
 - [ ] **Aggiornare** report LM (Tab.1) e recap coi nuovi numeri (delta baseline→finale).
-- [x] **Onestà dropout**: `p0.1` è within-noise, non un "real gain" (vero regolarizzatore = tying).
+- [x] **Onestà dropout — AGGIORNATO**: nel NUOVO run (arch 56M) `p0.1` dà un gain REALE
+  (34.84→34.55, −0.29 a parità di condizioni; U-shape oltre 0.1). Diverso dal vecchio run
+  (29M) dove era within-noise. Il **weight tying** resta il regolarizzatore più forte
+  (−1.25 PPL *e* metà parametri).
 
 ## 2. Parte 1.B (LoRA) — seed singolo
 
