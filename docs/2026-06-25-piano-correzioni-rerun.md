@@ -82,9 +82,12 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
   modello regolarizzato (rumore del dropout → curva di valid più rumorosa, convergenza più
   lenta) il tempo di convergere, allo step `02_dropout`/`03_weight_tying` abbiamo alzato
   `patience 3→6` ed `epochs 30→50`, e aggiunto `p=0.0` come riferimento NO-dropout alle
-  STESSE condizioni. Conseguenza onesta: se teniamo `p=0.0`, il suo PPL **differisce dal
-  34.77** dello step heads (girato a patience 3) — il miglioramento è dovuto alla maggiore
-  pazienza/epoche (stessa architettura, più tempo), **non** al dropout. Va detto esplicitamente.
+  STESSE condizioni. Conseguenza onesta: il riferimento `p=0.0` dà **34.84**, leggermente
+  diverso dal **34.77** dello step heads (epochs 30). Motivo MECCANICO, non il dropout: lo
+  scheduler cosine usa `total_steps = epochs × batch`, quindi `epochs 30→50` allunga la
+  curva di decay del lr → traiettoria un filo diversa (qui pure marginalmente peggiore).
+  Dentro lo sweep il confronto è consistente (tutte le run a epochs=50): i `p>0` vanno
+  confrontati con **34.84**, non col 34.77. Da esplicitare nel report.
 - [ ] **Report NLU** (2.A + 2.B): max 1 pagina, encoder vs decoder, media±std.
 - [ ] **Zip di consegna** con i `bin/` (pesi) inclusi (gitignore non li esclude dallo zip).
 
