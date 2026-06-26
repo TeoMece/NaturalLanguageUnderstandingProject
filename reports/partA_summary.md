@@ -1,5 +1,6 @@
 | name | lr | valid PPL | test PPL | #params | s |
 |---|---|---|---|---|---|
+| partA_weighttying | 0.0005 | 33.30 | - | 30512721 | 1073.2 |
 | partA_dropout__p0.1 | 0.0005 | 34.55 | - | 56244305 | 1110.8 |
 | partA_heads__n_heads8 | 0.0005 | 34.77 | - | 56244305 | 662.7 |
 | partA_dropout__p0.0 | 0.0005 | 34.84 | - | 56244305 | 998.1 |
