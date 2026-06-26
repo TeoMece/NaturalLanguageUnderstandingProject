@@ -7,6 +7,7 @@ override:
     d_model: 512         # <- migliore d_model di 01_arch (512x2)
     num_layers: 2        # <- migliore num_layers di 01_arch
     ff_mult: 2           # <- miglior ff_mult di 01b (35.02)
+    n_heads: 8           # <- miglior n_heads di 01c (34.77; 512/8=64)
     dropout:
       enabled: true
   optim:
