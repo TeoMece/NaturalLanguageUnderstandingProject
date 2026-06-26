@@ -1,9 +1,12 @@
 | name | lr | valid PPL | test PPL | #params | s |
 |---|---|---|---|---|---|
+| partA_heads__n_heads8 | 0.0005 | 34.77 | - | 56244305 | 662.7 |
 | partA_arch__d_model512__num_layers4 | 0.0005 | 35.01 | - | 64648273 | 1129.2 |
 | partA_ff__ff_mult2 | 0.0005 | 35.02 | - | 56244305 | 672.3 |
+| partA_heads__n_heads4 | 0.0005 | 35.02 | - | 56244305 | 662.7 |
 | partA_arch__d_model512__num_layers2 | 0.0005 | 35.05 | - | 58343505 | 906.5 |
 | partA_ff__ff_mult4 | 0.0005 | 35.05 | - | 58343505 | 679.2 |
+| partA_heads__n_heads2 | 0.0005 | 35.09 | - | 56244305 | 775.1 |
 | partA_ff__ff_mult8 | 0.0005 | 35.18 | - | 62541905 | 725.4 |
 | partA_arch__d_model384__num_layers4 | 0.0005 | 35.25 | - | 46139473 | 993.7 |
 | partA_arch__d_model384__num_layers6 | 0.0005 | 35.34 | - | 49688401 | 1075.4 |
