@@ -78,6 +78,13 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
   rifinitura finale; contributo quantificato dall'ablazione `00b_no_scheduler` (gemello
   del baseline: scheduler OFF sui 3 lr, subito dopo il baseline) → mostra anche se il
   vantaggio dipende dall'lr. Scheduler ON come ricetta standard per il resto della catena.
+- [ ] **Dichiarare nel report LM il cambio di pazienza allo step dropout**: per dare al
+  modello regolarizzato (rumore del dropout → curva di valid più rumorosa, convergenza più
+  lenta) il tempo di convergere, allo step `02_dropout`/`03_weight_tying` abbiamo alzato
+  `patience 3→6` ed `epochs 30→50`, e aggiunto `p=0.0` come riferimento NO-dropout alle
+  STESSE condizioni. Conseguenza onesta: se teniamo `p=0.0`, il suo PPL **differisce dal
+  34.77** dello step heads (girato a patience 3) — il miglioramento è dovuto alla maggiore
+  pazienza/epoche (stessa architettura, più tempo), **non** al dropout. Va detto esplicitamente.
 - [ ] **Report NLU** (2.A + 2.B): max 1 pagina, encoder vs decoder, media±std.
 - [ ] **Zip di consegna** con i `bin/` (pesi) inclusi (gitignore non li esclude dallo zip).
 
