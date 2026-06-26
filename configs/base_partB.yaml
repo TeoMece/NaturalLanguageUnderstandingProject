@@ -9,7 +9,9 @@ data:
   fraction: 1.0        # frazione di frasi di train usate (1.0 = tutte)
   max_samples: null    # alternativa a fraction: numero assoluto di frasi
   subset_seed: 42      # seed per il sottocampionamento riproducibile
-  batch_size: 8        # GPT2 pre-addestrato e' grande: batch piccolo per la memoria
+  batch_size: 32       # frasi PTB corte (~21 parole): batch grande sfrutta la GPU. A bs=8
+                       #   si facevano 5259 micro-batch/epoca = overhead dominante (GPU ferma).
+                       #   bs=32 -> ~1315 batch/epoca, ~2-4x piu' veloce, sta in memoria (seq corte).
 model:
   name: openai-community/gpt2   # checkpoint HuggingFace da cui partire (pesi pre-addestrati)
   rank: 8              # rango r degli adapter LoRA (da sweeppare: 4/8/16)
