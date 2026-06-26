@@ -1,0 +1,11 @@
+# Esperimento B-zero - STARTING POINT: GPT2 pre-addestrato valutato SENZA adapter.
+# epochs=0 -> nessun training; all'init gli adapter LoRA hanno B=0 quindi ΔW=0 e il
+# modello E' il GPT2 puro. E' il riferimento "prima di LoRA" del report 1.B: misura
+# quanto LoRA migliora la PPL rispetto al modello pre-addestrato non adattato.
+# Run singola (nessuno sweep). In mode:final valuta anche la test PPL zero-shot.
+base: ../base_partB.yaml
+override:
+  experiment:
+    name: partB_zeroshot
+  optim:
+    epochs: 0          # nessuna epoca di training -> valutazione zero-shot del modello base

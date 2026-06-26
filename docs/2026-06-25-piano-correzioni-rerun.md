@@ -55,9 +55,12 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
 
 ## 2. Parte 1.B (LoRA) — seed singolo
 
-- [ ] **Starting point onesto**: GPT2 **pre-addestrato SENZA adapter** (zero-shot) — mostra
-  quanto aggiunge LoRA. (Forma da decidere.)
-- [ ] **Aggiornare** recap_b + parte LM del report col delta.
+- [x] **Starting point zero-shot IMPLEMENTATO**: `epochs=0` nel `fit` di
+  `lm_pipeline_b/train_lora.py` (con B=0 → ΔW=0 → GPT2 puro) + config
+  `configs/experiments_b/00_zeroshot.yaml` + test. È lo Step 0 del report (quanto aggiunge LoRA).
+- [ ] **Girare** zero-shot + ricerca lr→rank→alpha (i placeholder lr5e-4/rank16 nei config
+  sono del vecchio run, da riaggiornare coi nuovi vincitori).
+- [ ] **Aggiornare** recap_b + parte LM del report col delta (zero-shot → LoRA finale).
 
 ## 3. Parte 2.A (NLU, GPT2 da zero) — multi-seed sui vincitori/finali
 

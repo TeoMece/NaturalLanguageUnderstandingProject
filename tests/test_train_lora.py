@@ -10,7 +10,7 @@ import torch
 from transformers import GPT2Config
 
 from lm_pipeline_b.model_lora import GPT2_LoRA, apply_lora_freezing
-from lm_pipeline_b.train_lora import train_loop, eval_loop, _build_optimizer
+from lm_pipeline_b.train_lora import train_loop, eval_loop, _build_optimizer, fit
 
 
 def _tiny_model():
@@ -55,3 +55,22 @@ def test_eval_returns_finite_ppl():
     ppl, loss = eval_loop(_fake_loader(), model, "cpu", pad_id=99)
     assert ppl > 0 and torch.isfinite(torch.tensor(ppl))
     assert torch.isfinite(torch.tensor(loss))
+
+
+def test_zeroshot_epochs0_evaluates_without_training():
+    """epochs=0 (zero-shot): valuta una volta, NON addestra; best_ppl finita, adapter invariati."""
+    torch.manual_seed(0)
+    model = _tiny_model()
+    loader = _fake_loader(99)
+    # gli adapter B sono a 0 all'init: senza training devono restare invariati
+    lora_b = model.transformer.h[0].attn.lora_q.lora_B.weight.detach().clone()
+
+    hist = fit(model, loader, loader,
+               {"lr": 1e-2, "optimizer": "adamw", "epochs": 0}, "cpu", pad_id=99)
+
+    assert torch.isfinite(torch.tensor(hist["best_ppl"])), "best_ppl deve essere finita (non inf)"
+    assert hist["best_state"] is not None, "lo state del modello base va salvato"
+    assert hist["valid_ppl"] and torch.isfinite(torch.tensor(hist["valid_ppl"][0]))
+
+    lora_b_after = model.transformer.h[0].attn.lora_q.lora_B.weight.detach()
+    assert torch.allclose(lora_b, lora_b_after), "lo zero-shot non deve addestrare gli adapter"

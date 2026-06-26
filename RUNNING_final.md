@@ -130,6 +130,9 @@ python run.py export                 # LM/part_A
 ## 4) Parte 1.B — LoRA (`run_b.py`, `runs_b/`) — SEED SINGOLO
 
 ```bash
+# Step 0 - ZERO-SHOT: GPT2 pre-addestrato senza adapter (epochs=0) = riferimento "prima di LoRA"
+python run_b.py run --config configs/experiments_b/00_zeroshot.yaml
+# ricerca incrementale: lr -> rank -> alpha
 python run_b.py sweep --config configs/experiments_b/00_baseline.yaml ; python run_b.py aggregate   # lr
 #  porta il miglior lr in 01_rank_sweep.yaml:
 python run_b.py sweep --config configs/experiments_b/01_rank_sweep.yaml ; python run_b.py aggregate # rank
@@ -138,9 +141,9 @@ python run_b.py sweep --config configs/experiments_b/02_alpha_sweep.yaml ; pytho
 python run_b.py finalize             # test del migliore
 python run_b.py export               # LM/part_B
 ```
-> **TODO 1.B — starting point zero-shot**: valutare GPT2 pre-addestrato **senza adapter**
-> (es. una run con `epochs: 0`) per mostrare quanto aggiunge LoRA. Da implementare quando
-> arriviamo a 1.B (piccola aggiunta al `fit`/eval di `lm_pipeline_b`).
+> **Nota**: i placeholder `lr 5e-4 / rank 16` in `01_rank_sweep`/`02_alpha_sweep` sono
+> residui del vecchio run: vanno riaggiornati coi vincitori del NUOVO sweep (lr → rank → alpha).
+> Lo zero-shot va nel report come Step 0 ("quanto aggiunge LoRA"), NON nella catena di tuning.
 
 ---
 

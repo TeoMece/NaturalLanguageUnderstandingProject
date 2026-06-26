@@ -147,6 +147,19 @@ def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id, show_progr
     best_state = None
     epochs_no_improve = 0
 
+    # Zero-shot (epochs=0): nessun adapter addestrato. All'init B=0 -> ΔW=0, quindi il
+    # modello E' il GPT2 pre-addestrato PURO. Valutiamo una volta sola per ottenere il
+    # riferimento "prima di LoRA" (Step 0 del report 1.B): quanto aggiunge LoRA.
+    if epochs == 0:
+        ppl, val_loss = eval_loop(valid_loader, model, device, pad_id,
+                                  show_progress=show_progress, desc="eval zero-shot")
+        hist["train_loss"].append(float("nan"))
+        hist["valid_loss"].append(val_loss)
+        hist["valid_ppl"].append(ppl)
+        hist["best_ppl"] = ppl
+        hist["best_state"] = copy.deepcopy(model.state_dict())
+        return hist
+
     epoch_bar = tqdm(range(epochs), desc="epochs", disable=not show_progress)
     for ep in epoch_bar:
         tr_loss = train_loop(train_loader, optimizer, model, device, pad_id, grad_clip,
