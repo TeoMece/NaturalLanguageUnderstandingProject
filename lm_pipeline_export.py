@@ -60,6 +60,10 @@ def export_part_a(root, out_dir=None, best_cfg=None, best_ckpt=None):
         import glob
         finals = sorted(glob.glob(os.path.join(root, "runs", "*FINAL*", "metrics.json")))
         best_cfg = json.load(open(finals[-1]))["config"] if finals else {"model": {}, "data": {"batch_size": 16}}
+        # ...e prende il checkpoint dalla STESSA run FINAL (altrimenti bin/ resterebbe vuoto)
+        if best_ckpt is None and finals:
+            cand = os.path.join(os.path.dirname(finals[-1]), "best_model.pt")
+            best_ckpt = cand if os.path.exists(cand) else None
 
     with open(os.path.join(out_dir, "main.py"), "w") as f:
         f.write(_MAIN_TEMPLATE.format(best_cfg=repr(best_cfg)))

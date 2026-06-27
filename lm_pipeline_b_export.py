@@ -104,6 +104,10 @@ def export_part_b(root, out_dir=None, best_cfg=None, best_ckpt=None):
         best_cfg = (json.load(open(finals[-1]))["config"] if finals
                     else {"model": {"name": "openai-community/gpt2", "rank": 8, "alpha": 16},
                           "data": {"batch_size": 8}})
+        # ...e prende gli adapter dalla STESSA run FINAL (altrimenti bin/ resterebbe vuoto)
+        if best_ckpt is None and finals:
+            cand = os.path.join(os.path.dirname(finals[-1]), "adapters.pt")
+            best_ckpt = cand if os.path.exists(cand) else None
 
     with open(os.path.join(out_dir, "main.py"), "w") as f:
         f.write(_MAIN_TEMPLATE.format(best_cfg=repr(best_cfg)))

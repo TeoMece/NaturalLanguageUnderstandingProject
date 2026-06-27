@@ -1,0 +1,14 @@
+# Modello FINALE 1.B: migliori iperparametri della ricerca (lr 5e-4, rank 16, alpha 32)
+# a BUDGET PIENO (epochs=30 dal base, non il 18 ridotto delle sweep) + mode:final ->
+# allena sul train completo, early-stop su valid, e valuta la TEST PPL (numero definitivo).
+# Run singola (nessuno sweep). AMP attivo (training fp16, eval fp32).
+base: ../base_partB.yaml
+override:
+  experiment:
+    name: partB_FINAL   # MAIUSCOLO: l'export cerca le run con glob *FINAL*
+  optim:
+    lr: 5.0e-4         # miglior lr (21.65)
+  model:
+    rank: 16           # miglior rank (21.11)
+    alpha: 32          # miglior alpha (21.00); scaling alpha/rank = 2.0
+  mode: final          # allena a epochs=30 (base) e valuta su TEST
