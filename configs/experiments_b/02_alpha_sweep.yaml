@@ -7,6 +7,7 @@ override:
     name: partB_alpha
   optim:
     lr: 5.0e-4        # miglior lr da 00_baseline a bs=32 (valid PPL 21.65; zero-shot=253.09)
+    epochs: 18        # budget ridotto per la SOLA sweep (come 01_rank); finale a budget pieno nel finalize
   model:
     rank: 16           # <- aggiornare col miglior rank da 01_rank_sweep (placeholder vecchio run)
 sweep:
