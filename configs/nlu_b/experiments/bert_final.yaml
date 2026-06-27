@@ -1,0 +1,14 @@
+# Modello FINALE 2.B (DELIVERABLE): BERT (encoder), miglior lr 5e-5, mode:final su 5 seed.
+# E' il migliore (slot F1 98.64 vs 97.13 di GPT2) -> e' quello che esportiamo (NLU/part_B).
+# Nome 'FINAL' (maiuscolo) -> l'export globba runs_nlu_b/*FINAL* e prende questo.
+base: ../base_partB_nlu.yaml
+override:
+  experiment:
+    name: partB_nlu_FINAL
+  model:
+    name: google-bert/bert-base-uncased
+  optim:
+    lr: 5.0e-5         # miglior lr BERT (dev slot F1 98.64)
+  mode: final          # allena e valuta su TEST
+sweep:
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed -> test MEDIA ± std (seed_summary.py)

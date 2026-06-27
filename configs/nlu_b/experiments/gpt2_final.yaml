@@ -1,0 +1,15 @@
+# GPT2 (decoder) FINALE per il CONFRONTO encoder-vs-decoder su test, miglior lr 5e-5,
+# mode:final su 5 seed. NON e' il deliverable (BERT e' migliore): il nome NON contiene
+# 'FINAL' maiuscolo, cosi' l'export non lo prende. Serve solo per il test slot F1/intent
+# di GPT2 da mettere a confronto con BERT nel report.
+base: ../base_partB_nlu.yaml
+override:
+  experiment:
+    name: partB_nlu_gpt2cmp
+  model:
+    name: openai-community/gpt2
+  optim:
+    lr: 5.0e-5         # miglior lr GPT2 (dev slot F1 97.13)
+  mode: final          # valuta su TEST (per il confronto)
+sweep:
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed -> test MEDIA ± std
