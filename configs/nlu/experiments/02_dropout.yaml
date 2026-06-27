@@ -6,6 +6,7 @@ override:
   model:
     d_model: 384         # miglior arch (01 multi-seed: 384x2, slot F1 96.18)
     num_layers: 2
+    ff_mult: 2           # miglior ff_mult (01b multi-seed: slot 96.17, miglior intent 98.55)
     dropout:
       enabled: true
   optim:

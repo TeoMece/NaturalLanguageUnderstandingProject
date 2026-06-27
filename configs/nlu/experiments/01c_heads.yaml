@@ -10,7 +10,7 @@ override:
   model:
     d_model: 384         # miglior arch (01 multi-seed: 384x2, slot F1 96.18); divisibile per n_heads
     num_layers: 2        # miglior arch (01 multi-seed: 384x2)
-    ff_mult: 4           # <- aggiornare col miglior ff_mult di 01b_ffn
+    ff_mult: 2           # miglior ff_mult (01b multi-seed: slot 96.17, miglior intent 98.55)
   optim:
     lr: 1.0e-4           # miglior lr (baseline multi-seed: slot F1 95.96±0.11, miglior intent+stabilita')
 sweep:
