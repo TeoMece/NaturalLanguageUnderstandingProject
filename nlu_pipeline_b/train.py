@@ -32,9 +32,12 @@ def _build_optimizer(model, cfg_optim):
 
 
 def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, grad_clip,
-                    show_progress=False, desc="train"):
+                    scaler=None, show_progress=False, desc="train"):
+    """Un'epoca multi-task. Con `scaler` (GradScaler abilitato, solo su CUDA) il forward
+    gira in float16 sui tensor core (~1.5-2x); su cpu/mps resta fp32 (test invariati)."""
     model.train()
     total, seen = 0.0, 0
+    use_amp = scaler is not None and scaler.is_enabled()
     bar = tqdm(loader, desc=desc, leave=False, disable=not show_progress)
     for b in bar:
         ids = b["input_ids"].to(device)
@@ -42,13 +45,22 @@ def train_one_epoch(loader, optimizer, crit_slot, crit_intent, model, device, gr
         y_slots = b["slot_labels"].to(device)
         intents = b["intents"].to(device)
         optimizer.zero_grad()
-        slot_logits, intent_logits = model(ids, attn)
-        loss = (crit_slot(slot_logits.permute(0, 2, 1), y_slots)
-                + crit_intent(intent_logits, intents))
-        loss.backward()
-        if grad_clip:
-            nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-        optimizer.step()
+        with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_amp):
+            slot_logits, intent_logits = model(ids, attn)
+            loss = (crit_slot(slot_logits.permute(0, 2, 1), y_slots)
+                    + crit_intent(intent_logits, intents))
+        if use_amp:
+            scaler.scale(loss).backward()
+            if grad_clip:
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            if grad_clip:
+                nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
         total += loss.item()
         seen += 1
         if show_progress:
@@ -98,6 +110,8 @@ def fit(model, train_loader, dev_loader, cfg_optim, device, id2slot, show_progre
     """Fine-tuning multi-task con early stopping su dev slot F1 (massimizzazione)."""
     model.to(device)
     optimizer = _build_optimizer(model, cfg_optim)
+    # Mixed precision solo su CUDA (V100 tensor core); cpu/mps -> fp32 (test invariati).
+    scaler = torch.cuda.amp.GradScaler(enabled=str(device).startswith("cuda"))
     crit_slot = nn.CrossEntropyLoss(ignore_index=IGNORE)
     crit_intent = nn.CrossEntropyLoss()
     epochs = cfg_optim.get("epochs", 5)
@@ -109,7 +123,7 @@ def fit(model, train_loader, dev_loader, cfg_optim, device, id2slot, show_progre
     epoch_bar = tqdm(range(epochs), desc="epochs", disable=not show_progress)
     for ep in epoch_bar:
         tr = train_one_epoch(train_loader, optimizer, crit_slot, crit_intent,
-                             model, device, grad_clip,
+                             model, device, grad_clip, scaler=scaler,
                              show_progress=show_progress, desc=f"train e{ep + 1}/{epochs}")
         f1, acc, _ = evaluate(dev_loader, crit_slot, crit_intent, model, id2slot, device,
                               show_progress=show_progress, desc=f"eval e{ep + 1}")

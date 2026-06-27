@@ -6,7 +6,7 @@ experiment:
   seed: 42
   device: auto
 data:
-  batch_size: 16       # modelli grandi: batch piccolo per la memoria GPU
+  batch_size: 32       # frasi ATIS corte (~11 parole): batch 32 sfrutta meglio la GPU (sta in memoria)
   dev_portion: 0.10    # dev = 10% del train, stratificato sull'intent
   split_seed: 42
 model:
