@@ -4,7 +4,7 @@ override:
   experiment:
     name: partA_nlu_dropout
   model:
-    d_model: 256         # miglior arch (01: dev slot F1 96.52); divisibile per n_heads
+    d_model: 384         # miglior arch (01 multi-seed: 384x2, slot F1 96.18)
     num_layers: 2
     dropout:
       enabled: true
