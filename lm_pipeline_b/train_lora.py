@@ -33,12 +33,17 @@ def _hf_labels(input_ids, pad_id):
 
 
 def train_loop(loader, optimizer, model, device, pad_id, grad_clip=None,
-               show_progress=False, desc="train"):
+               scaler=None, show_progress=False, desc="train"):
     """Una epoca di training. Ritorna la loss media per token.
 
     Per ogni batch: costruisce i label HF, forward con `labels=` (HF calcola la
     loss), backward, gradient clipping opzionale, step. La loss viene pesata per
     il numero di token reali (n_tokens) per ottenere una media per-token corretta.
+
+    Mixed precision (AMP): se `scaler` e' un GradScaler abilitato (solo su CUDA), il
+    forward gira in float16 sui tensor core della V100 (~1.5-2x piu' veloce) e il
+    backward usa il loss scaling per evitare underflow dei gradienti in fp16. Su CPU
+    (scaler None/disabilitato) resta fp32, identico a prima.
 
     Parametri
     ----------
@@ -49,9 +54,11 @@ def train_loop(loader, optimizer, model, device, pad_id, grad_clip=None,
     device    : str — device su cui spostare i tensori.
     pad_id    : int — id del token di padding (mappato a -100 nei label).
     grad_clip : float|None — soglia di gradient clipping (None/0 = disattivo).
+    scaler    : torch.cuda.amp.GradScaler|None — abilita la mixed precision se fornito.
     """
     model.train()
     total_loss, total_tokens = 0.0, 0
+    use_amp = scaler is not None and scaler.is_enabled()
 
     bar = tqdm(loader, desc=desc, leave=False, disable=not show_progress)
     for input_ids, _, n_tokens in bar:
@@ -59,18 +66,29 @@ def train_loop(loader, optimizer, model, device, pad_id, grad_clip=None,
         labels = _hf_labels(input_ids, pad_id)
 
         optimizer.zero_grad()
-        # HuggingFace: passando labels otteniamo output.loss (cross-entropy gia'
-        # mediata sui token non -100), con lo shift dei target gestito internamente.
-        output = model(input_ids, labels=labels)
-        loss = output.loss
-        loss.backward()
+        # Forward in autocast: in fp16 sui tensor core se use_amp, altrimenti no-op (fp32).
+        with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_amp):
+            # HuggingFace: passando labels otteniamo output.loss (cross-entropy gia'
+            # mediata sui token non -100), con lo shift dei target gestito internamente.
+            output = model(input_ids, labels=labels)
+            loss = output.loss
 
-        if grad_clip:
-            torch.nn.utils.clip_grad_norm_(
-                (p for p in model.parameters() if p.requires_grad), grad_clip
-            )
-
-        optimizer.step()
+        if use_amp:
+            scaler.scale(loss).backward()
+            if grad_clip:
+                scaler.unscale_(optimizer)   # de-scala prima del clipping
+                torch.nn.utils.clip_grad_norm_(
+                    (p for p in model.parameters() if p.requires_grad), grad_clip
+                )
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            if grad_clip:
+                torch.nn.utils.clip_grad_norm_(
+                    (p for p in model.parameters() if p.requires_grad), grad_clip
+                )
+            optimizer.step()
 
         total_loss += loss.item() * int(n_tokens)
         total_tokens += int(n_tokens)
@@ -87,13 +105,15 @@ def eval_loop(loader, model, device, pad_id, show_progress=False, desc="eval"):
     """
     model.eval()
     total_loss, total_tokens = 0.0, 0
+    use_amp = str(device).startswith("cuda")   # autocast in eval solo su GPU
 
     with torch.no_grad():
         for input_ids, _, n_tokens in tqdm(loader, desc=desc, leave=False,
                                            disable=not show_progress):
             input_ids = input_ids.to(device)
             labels = _hf_labels(input_ids, pad_id)
-            output = model(input_ids, labels=labels)
+            with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_amp):
+                output = model(input_ids, labels=labels)
             total_loss += output.loss.item() * int(n_tokens)
             total_tokens += int(n_tokens)
 
@@ -138,6 +158,10 @@ def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id, show_progr
     model.to(device)
     optimizer = _build_optimizer(model, cfg_optim)
 
+    # Mixed precision: abilitata SOLO su CUDA (V100 -> tensor core, ~1.5-2x). Su
+    # cpu/mps lo scaler e' disabilitato -> percorso fp32 identico a prima (test ok).
+    scaler = torch.cuda.amp.GradScaler(enabled=str(device).startswith("cuda"))
+
     epochs = cfg_optim.get("epochs", 10)
     patience = cfg_optim.get("patience", 3)
     grad_clip = cfg_optim.get("grad_clip", 1.0)
@@ -163,7 +187,8 @@ def fit(model, train_loader, valid_loader, cfg_optim, device, pad_id, show_progr
     epoch_bar = tqdm(range(epochs), desc="epochs", disable=not show_progress)
     for ep in epoch_bar:
         tr_loss = train_loop(train_loader, optimizer, model, device, pad_id, grad_clip,
-                             show_progress=show_progress, desc=f"train e{ep + 1}/{epochs}")
+                             scaler=scaler, show_progress=show_progress,
+                             desc=f"train e{ep + 1}/{epochs}")
         ppl, val_loss = eval_loop(valid_loader, model, device, pad_id,
                                   show_progress=show_progress, desc=f"eval e{ep + 1}")
 
