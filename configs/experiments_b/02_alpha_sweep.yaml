@@ -6,7 +6,7 @@ override:
   experiment:
     name: partB_alpha
   optim:
-    lr: 5.0e-4        # miglior lr da 00_baseline (valid PPL 22.59; zero-shot=253.09)
+    lr: 5.0e-4        # miglior lr da 00_baseline a bs=32 (valid PPL 21.65; zero-shot=253.09)
   model:
     rank: 16           # <- aggiornare col miglior rank da 01_rank_sweep (placeholder vecchio run)
 sweep:
