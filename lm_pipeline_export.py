@@ -43,6 +43,19 @@ if __name__ == "__main__":
     print(f"Test PPL: {{ppl:.2f}}")
 '''
 
+_README = '''# Parte 1.A — Language Modeling (GPT-2 da zero su Penn Treebank)
+
+GPT-2 decoder-only addestrato da zero su PTB. File:
+- `model.py`     : `GPT2` (transformer parametrico) + `init_weights` (residual scaling)
+- `functions.py` : device, scheduler warmup+cosine, train/eval, `fit` (early stopping)
+- `utils.py`     : lettura PTB, tokenizer, dataloader
+- `main.py`      : carica il modello migliore (`bin/best_model.pt`) e stampa la PPL su test
+- `bin/`         : `best_model.pt` (pesi del modello finale)
+- `dataset/PennTreeBank` : ptb.train/valid/test.txt
+
+Esecuzione: `python main.py`.
+'''
+
 
 def export_part_a(root, out_dir=None, best_cfg=None, best_ckpt=None):
     """Genera LM/part_A standalone. `best_cfg`/`best_ckpt` opzionali per i test."""
@@ -67,6 +80,16 @@ def export_part_a(root, out_dir=None, best_cfg=None, best_ckpt=None):
 
     with open(os.path.join(out_dir, "main.py"), "w") as f:
         f.write(_MAIN_TEMPLATE.format(best_cfg=repr(best_cfg)))
+    with open(os.path.join(out_dir, "README.md"), "w") as f:
+        f.write(_README)
+
+    # Dataset PTB: la consegna deve girare standalone (main.py legge da dataset/PennTreeBank)
+    dst_ds = os.path.join(out_dir, "dataset", "PennTreeBank")
+    os.makedirs(dst_ds, exist_ok=True)
+    for fn in ("ptb.train.txt", "ptb.valid.txt", "ptb.test.txt"):
+        src_f = os.path.join(root, "dataset", "PennTreeBank", fn)
+        if os.path.exists(src_f):
+            shutil.copy(src_f, os.path.join(dst_ds, fn))
 
     if best_ckpt and os.path.exists(best_ckpt):
         shutil.copy(best_ckpt, os.path.join(out_dir, "bin", "best_model.pt"))

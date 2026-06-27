@@ -115,6 +115,14 @@ def export_part_b(root, out_dir=None, best_cfg=None, best_ckpt=None):
     with open(os.path.join(out_dir, "README.md"), "w") as f:
         f.write(_README)
 
+    # Dataset PTB: la consegna deve girare standalone (main.py legge da dataset/PennTreeBank)
+    dst_ds = os.path.join(out_dir, "dataset", "PennTreeBank")
+    os.makedirs(dst_ds, exist_ok=True)
+    for fn in ("ptb.train.txt", "ptb.valid.txt", "ptb.test.txt"):
+        src_f = os.path.join(root, "dataset", "PennTreeBank", fn)
+        if os.path.exists(src_f):
+            shutil.copy(src_f, os.path.join(dst_ds, fn))
+
     if best_ckpt and os.path.exists(best_ckpt):
         shutil.copy(best_ckpt, os.path.join(out_dir, "bin", "adapters.pt"))
     return out_dir
