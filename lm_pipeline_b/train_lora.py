@@ -105,15 +105,15 @@ def eval_loop(loader, model, device, pad_id, show_progress=False, desc="eval"):
     """
     model.eval()
     total_loss, total_tokens = 0.0, 0
-    use_amp = str(device).startswith("cuda")   # autocast in eval solo su GPU
 
+    # Eval in fp32 (no autocast): la PPL riportata resta esatta. I pesi master sono
+    # comunque fp32 anche con l'AMP nel training, quindi la valutazione e' precisa.
     with torch.no_grad():
         for input_ids, _, n_tokens in tqdm(loader, desc=desc, leave=False,
                                            disable=not show_progress):
             input_ids = input_ids.to(device)
             labels = _hf_labels(input_ids, pad_id)
-            with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_amp):
-                output = model(input_ids, labels=labels)
+            output = model(input_ids, labels=labels)
             total_loss += output.loss.item() * int(n_tokens)
             total_tokens += int(n_tokens)
 
