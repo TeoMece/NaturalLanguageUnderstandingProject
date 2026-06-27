@@ -11,7 +11,7 @@ override:
     d_model: 256         # miglior arch (01: dev slot F1 96.52); divisibile per n_heads
     num_layers: 2        # miglior arch (esperimento 01)
   optim:
-    lr: 5.0e-4           # miglior lr (baseline: dev slot F1 96.52)
+    lr: 1.0e-4           # miglior lr (baseline multi-seed: slot F1 95.96±0.11, miglior intent+stabilita')
 sweep:
   model.ff_mult: [2, 4, 8]
   experiment.seed: [42, 1, 2, 3, 4]   # 5 seed/valore -> selezione sulla MEDIA (seed_summary.py)
