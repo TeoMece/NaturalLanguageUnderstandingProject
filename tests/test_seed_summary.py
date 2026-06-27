@@ -2,7 +2,7 @@
 import os
 import json
 
-from seed_summary import group_key, collect, summarize
+from seed_summary import group_key, collect, summarize, to_markdown
 
 
 def test_group_key_strips_seed():
@@ -34,3 +34,13 @@ def test_collect_and_summarize(tmp_path):
     # n=1 -> std 0
     _, sdB, nB = rows["cfgB"]["metrics"]["best_dev_slot_f1"]
     assert nB == 1 and sdB == 0.0
+
+
+def test_to_markdown_renders(tmp_path):
+    """to_markdown non deve crashare e deve contenere i valori formattati (regressione _fmt)."""
+    root = str(tmp_path)
+    _write_run(root, "cfgA__seed42", {"best_dev_slot_f1": 0.96, "best_dev_intent_acc": 0.98})
+    _write_run(root, "cfgA__seed1", {"best_dev_slot_f1": 0.94, "best_dev_intent_acc": 0.96})
+    md = to_markdown(summarize(collect(root)))
+    assert "cfgA" in md and "best_dev_slot_f1" in md
+    assert "95.00 ±" in md   # media 0.95 -> 95.00% (con std)

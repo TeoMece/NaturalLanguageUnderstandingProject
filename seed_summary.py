@@ -62,8 +62,9 @@ def summarize(groups):
     return rows
 
 
-def _fmt(metric, mu, sd):
-    # PPL: valore grezzo; F1/accuracy (0-1): mostrati in % per leggibilita'
+def _fmt(metric, mu, sd, n=None):
+    # summarize salva (media, std, n): accettiamo n (e lo ignoriamo qui, il conteggio
+    # e' gia' nella colonna n_seeds). PPL: valore grezzo; F1/accuracy (0-1): in %.
     if "ppl" in metric:
         return f"{mu:.2f} ± {sd:.2f}"
     return f"{mu * 100:.2f} ± {sd * 100:.2f}"
