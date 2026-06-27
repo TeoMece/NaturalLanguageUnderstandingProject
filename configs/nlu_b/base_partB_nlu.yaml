@@ -14,8 +14,9 @@ model:
   intent_pool: null    # null -> dedotto dal nome (bert->[CLS] in testa; gpt2->ultimo token)
 optim:
   lr: 3.0e-5           # lr piccolo da fine-tuning (NON il 5e-4 di 2.A da-zero)
-  epochs: 10           # cap generoso: il fine-tuning converge in poche epoche ma lasciamo
-                       #   decidere alla patience (lezione 1.B: cap troppo basso = sotto-convergenza)
+  epochs: 30           # cap alto: a 10 alcune run (lr piccolo, convergenza lenta) erano ancora
+                       #   in salita. Lasciamo decidere alla patience, non al cap (lezione 1.B).
   grad_clip: 1.0
-  patience: 3          # early stopping su dev slot F1 (protegge anche da overfitting su ATIS)
+  patience: 5          # early stopping su dev slot F1; 5 da' margine alle curve lente/rumorose
+                       #   e protegge dall'overfitting (ferma al plateau, ben prima del cap)
 mode: dev              # dev -> valuta su dev | final -> valuta anche su test
