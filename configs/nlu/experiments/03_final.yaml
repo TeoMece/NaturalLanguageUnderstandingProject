@@ -1,0 +1,23 @@
+# Modello FINALE 2.A: migliori iperparametri della ricerca multi-seed
+# (d384 / l2 / ff_mult2 / n_heads4 + dropout 0.1, lr 1e-4), valutati su TEST con
+# mode:final su 5 seed -> seed_summary da' test slot F1 / intent acc MEDIA ± std
+# (come chiede il lab). epochs/patience invariati (base): budget identico a tutta la
+# ricerca, quindi NON serve un override (a differenza di 1.B). Nome 'FINAL' (maiuscolo)
+# per il glob dell'export (runs_nlu/*FINAL*).
+base: ../base_partA_nlu.yaml
+override:
+  experiment:
+    name: partA_nlu_FINAL
+  model:
+    d_model: 384         # miglior arch (01)
+    num_layers: 2        # miglior arch (01)
+    ff_mult: 2           # miglior ff (01b)
+    n_heads: 4           # miglior n_heads (01c)
+    dropout:
+      enabled: true
+      p: 0.1             # miglior dropout (02: 96.51 vs 96.17 no-dropout)
+  optim:
+    lr: 1.0e-4           # miglior lr (00 baseline)
+  mode: final            # allena e valuta su TEST
+sweep:
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed -> test MEDIA ± std (seed_summary.py)
