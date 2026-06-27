@@ -61,6 +61,12 @@ la tabella di ricerca resta a seed singolo, dichiarandolo.
 - [ ] **Girare** zero-shot + ricerca lr→rank→alpha (i placeholder lr5e-4/rank16 nei config
   sono del vecchio run, da riaggiornare coi nuovi vincitori).
 - [ ] **Aggiornare** recap_b + parte LM del report col delta (zero-shot → LoRA finale).
+- [ ] **Dichiarare nel report (1.B) le scelte di efficienza**: (a) `batch_size=32` (frasi PTB
+  corte → bs=8 sotto-utilizzava la GPU con migliaia di micro-batch); (b) **mixed precision (AMP)**
+  nel training (tensor core V100, ~1.5-2x; eval in fp32 per PPL esatta); (c) sweep rank/alpha a
+  **epochs=18** (confronto equo, più veloce) e modello **finale a budget pieno (epochs=30) nel
+  finalize**. Nota: l'lr sweep è fp32 (pre-AMP), rank/alpha e finalize sono AMP — differenza
+  trascurabile, vincitore lr (5e-4) robusto.
 
 ## 3. Parte 2.A (NLU, GPT2 da zero) — multi-seed sui vincitori/finali
 
