@@ -11,3 +11,4 @@ override:
 sweep:
   model.d_model: [128, 256, 384]
   model.num_layers: [2, 4]
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed/valore -> selezione sulla MEDIA (seed_summary.py)

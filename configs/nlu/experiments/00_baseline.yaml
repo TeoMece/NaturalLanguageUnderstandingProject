@@ -6,3 +6,4 @@ override:
     name: partA_nlu_baseline
 sweep:
   optim.lr: [1.0e-3, 5.0e-4, 1.0e-4]
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed/valore -> selezione sulla MEDIA (seed_summary.py)

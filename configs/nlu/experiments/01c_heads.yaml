@@ -15,3 +15,4 @@ override:
     lr: 5.0e-4           # miglior lr (baseline: dev slot F1 96.52)
 sweep:
   model.n_heads: [2, 4, 8]
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed/valore -> selezione sulla MEDIA (seed_summary.py)

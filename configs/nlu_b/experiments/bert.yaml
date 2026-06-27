@@ -6,3 +6,4 @@ override:
     name: google-bert/bert-base-uncased
 sweep:
   optim.lr: [5.0e-5, 3.0e-5, 2.0e-5]
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed/valore -> selezione sulla MEDIA (seed_summary.py)

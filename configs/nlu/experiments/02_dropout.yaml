@@ -13,3 +13,4 @@ override:
 # risoluzione piu' fine nella zona bassa (dove di solito sta l'ottimo) + un valore alto
 sweep:
   model.dropout.p: [0.1, 0.2, 0.3, 0.5]
+  experiment.seed: [42, 1, 2, 3, 4]   # 5 seed/valore -> selezione sulla MEDIA (seed_summary.py)
