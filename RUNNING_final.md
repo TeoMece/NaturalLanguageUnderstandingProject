@@ -70,38 +70,40 @@ Quando hai un **vincitore** (o il modello finale), ripetilo su 5 seed e fai la m
 ## 1) Parte 2.B — fine-tuning GPT2 + BERT (`run_nlu_b.py`, `runs_nlu_b/`)
 
 ```bash
-# ricerca lr, per modello (seed singolo)
-python run_nlu_b.py sweep --config configs/nlu_b/experiments/gpt2.yaml
-python run_nlu_b.py sweep --config configs/nlu_b/experiments/bert.yaml   # scarica bert al 1° uso
-python run_nlu_b.py aggregate        # -> reports/partB_nlu_summary.md (scegli miglior lr per modello)
+# ricerca lr, per modello: OGNI sweep gira 5 seed/valore (gia' nei config).
+python run_nlu_b.py sweep --config configs/nlu_b/experiments/gpt2.yaml   # 15 run (3 lr x5)
+python run_nlu_b.py sweep --config configs/nlu_b/experiments/bert.yaml   # 15 run; scarica bert al 1° uso
+python seed_summary.py --runs runs_nlu_b      # miglior lr per modello sulla MEDIA
+python run_nlu_b.py aggregate                 # tabella di dettaglio
 
-# MULTI-SEED del miglior gpt2 e del miglior bert (confronto encoder vs decoder con std)
-#   crea 2 config = (gpt2 best lr) e (bert best lr) + sweep experiment.seed:[42,1,2,3,4] + mode: final
-python run_nlu_b.py sweep --config configs/nlu_b/experiments/<gpt2_best_seeds>.yaml
-python run_nlu_b.py sweep --config configs/nlu_b/experiments/<bert_best_seeds>.yaml
+# FINALE encoder vs decoder: crea 2 config (gpt2 best lr) e (bert best lr) + mode:final
+#   (il seed sweep e' gia' nei config) -> seed_summary = test slot F1 / intent acc MEDIA ± std.
+python run_nlu_b.py sweep --config configs/nlu_b/experiments/<gpt2_final>.yaml
+python run_nlu_b.py sweep --config configs/nlu_b/experiments/<bert_final>.yaml
 python seed_summary.py --runs runs_nlu_b --out reports/seed_summary_nlu_b.md
-
 python run_nlu_b.py export           # NLU/part_B (pesi ~500MB -> zip, non git)
 ```
 
 ## 2) Parte 2.A — GPT2 da zero (`run_nlu.py`, `runs_nlu/`)
 
 ```bash
-# ricerca incrementale (seed singolo): lr -> arch -> ff -> heads -> dropout
-python run_nlu.py sweep --config configs/nlu/experiments/00_baseline.yaml ; python run_nlu.py aggregate
-#  porta il miglior lr in 01_arch.yaml:
-python run_nlu.py sweep --config configs/nlu/experiments/01_arch.yaml ; python run_nlu.py aggregate
-#  porta arch in 01b_ffn.yaml:
-python run_nlu.py sweep --config configs/nlu/experiments/01b_ffn.yaml ; python run_nlu.py aggregate
-#  porta ff in 01c_heads.yaml:
-python run_nlu.py sweep --config configs/nlu/experiments/01c_heads.yaml ; python run_nlu.py aggregate
-#  porta heads in 02_dropout.yaml:
-python run_nlu.py sweep --config configs/nlu/experiments/02_dropout.yaml ; python run_nlu.py aggregate
+# Ricerca incrementale: OGNI sweep gira 5 seed/valore (gia' nei config). Dopo ogni step:
+#   seed_summary.py -> scegli il vincitore sulla MEDIA della dev slot F1, poi propaga.
+python run_nlu.py sweep --config configs/nlu/experiments/00_baseline.yaml   # 15 run (3 lr x5)
+python seed_summary.py --runs runs_nlu          # scegli miglior lr sulla MEDIA
+#  porta il miglior lr in 01_arch.yaml, poi:
+python run_nlu.py sweep --config configs/nlu/experiments/01_arch.yaml       # 30 run (6 x5)
+python seed_summary.py --runs runs_nlu
+#  porta arch in 01b_ffn / 01c_heads:
+python run_nlu.py sweep --config configs/nlu/experiments/01b_ffn.yaml ; python seed_summary.py --runs runs_nlu
+python run_nlu.py sweep --config configs/nlu/experiments/01c_heads.yaml ; python seed_summary.py --runs runs_nlu
+python run_nlu.py sweep --config configs/nlu/experiments/02_dropout.yaml ; python seed_summary.py --runs runs_nlu
+python run_nlu.py aggregate          # tabella di dettaglio (tutte le run)
 
-# MULTI-SEED del vincitore di ogni step + del finale (ricetta sopra) -> seed_summary
+# FINALE: crea un config con gli iperparametri vincenti + sweep experiment.seed:[42,1,2,3,4]
+#   + mode:final -> 5 run su test -> seed_summary = test slot F1 / intent acc MEDIA ± std.
+python run_nlu.py sweep --config configs/nlu/experiments/03_final.yaml      # (da creare coi vincitori)
 python seed_summary.py --runs runs_nlu --out reports/seed_summary_nlu.md
-
-python run_nlu.py finalize           # test del migliore (meglio: multi-seed con mode:final)
 python run_nlu.py export             # NLU/part_A
 ```
 
